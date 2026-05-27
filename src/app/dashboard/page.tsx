@@ -6,6 +6,7 @@ import { formatCurrency, formatDuration } from "@/lib/utils"
 import { format } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { Logo } from "@/components/Logo"
 
 type Booking = {
   id: string
@@ -116,9 +117,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#050505]">
       {/* Top nav */}
       <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between">
-        <span className="text-xl font-bold">
-          Chat<span className="text-purple-500">Rate</span>
-        </span>
+        <Logo />
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard/settings"

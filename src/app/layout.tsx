@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://chatrate-app.netlify.app"),
   title: "ChatRate — Expert Consultations, On Your Terms",
   description:
     "Book a one-on-one call with an expert. Pay per minute or flat rate. Transcripts available.",

@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Logo } from "@/components/Logo"
 
 const steps = [
   { n: "1", title: "Sign up free", desc: "Create your account in 60 seconds." },
@@ -27,9 +28,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#050505]">
       {/* Nav */}
       <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-5xl mx-auto">
-        <span className="text-2xl font-bold tracking-tight">
-          Chat<span className="text-purple-500">Rate</span>
-        </span>
+        <Logo size={40} />
         <div className="flex items-center gap-3">
           <Link href="/signup" className="text-sm text-gray-400 hover:text-white transition-colors">
             Sign in

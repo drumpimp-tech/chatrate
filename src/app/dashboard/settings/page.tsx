@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
+import { Logo } from "@/components/Logo"
 
 type Host = {
   username: string
@@ -75,9 +76,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-[#050505]">
       <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between">
-        <span className="text-xl font-bold">
-          Chat<span className="text-purple-500">Rate</span>
-        </span>
+        <Logo />
         <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">
           ← Dashboard
         </Link>

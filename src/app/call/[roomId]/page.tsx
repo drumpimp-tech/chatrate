@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { formatCurrency, formatDuration } from "@/lib/utils"
 import { Suspense } from "react"
+import Image from "next/image"
 
 type BookingData = {
   id: string
@@ -262,9 +263,10 @@ function CallRoomContent() {
       {/* Top bar */}
       <div className="border-b border-white/5 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold">
-            Chat<span className="text-purple-500">Rate</span>
-          </span>
+          <div className="flex items-center gap-2">
+            <Image src="/icon.png" alt="ChatRate" width={28} height={28} className="rounded-lg" />
+            <span className="text-lg font-bold">Chat<span className="text-purple-500">Rate</span></span>
+          </div>
           {callState === "connected" && (
             <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 rounded-full px-3 py-1">
               <span className="w-2 h-2 rounded-full bg-red-500 pulse-dot" />

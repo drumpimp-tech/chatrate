@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { Logo } from "@/components/Logo"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -61,9 +62,7 @@ export default function SignupPage() {
     <div className="min-h-screen bg-[#050505] flex items-center justify-center px-4">
       <div className="max-w-sm w-full fade-up">
         <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold">
-            Chat<span className="text-purple-500">Rate</span>
-          </Link>
+          <Logo size={44} />
           <p className="text-gray-500 text-sm mt-1">
             {mode === "signup" ? "Create your expert page" : "Welcome back"}
           </p>

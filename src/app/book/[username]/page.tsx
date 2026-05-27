@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
+import { Logo } from "@/components/Logo"
 
 type Host = {
   id: string
@@ -113,7 +114,7 @@ export default function BookPage() {
   return (
     <div className="min-h-screen bg-[#050505]">
       <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-2xl mx-auto">
-        <a href="/" className="text-xl font-bold">Chat<span className="text-purple-500">Rate</span></a>
+        <Logo />
         <span className="text-sm text-gray-500">Secure booking</span>
       </nav>
 

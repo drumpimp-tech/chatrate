@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { Logo } from "@/components/Logo"
 
 function SuccessContent() {
   const params = useSearchParams()

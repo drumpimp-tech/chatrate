@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
+import { Logo } from "@/components/Logo"
 
 type Booking = {
   id: string
@@ -67,9 +68,7 @@ function ConfirmContent() {
   return (
     <div className="min-h-screen bg-[#050505]">
       <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-2xl mx-auto">
-        <a href="/" className="text-xl font-bold">
-          Chat<span className="text-purple-500">Rate</span>
-        </a>
+        <Logo />
       </nav>
 
       <div className="max-w-md mx-auto px-4 py-12 text-center fade-up">

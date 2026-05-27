@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
+import { Logo } from "@/components/Logo"
 
 type Step = 1 | 2 | 3 | 4
 
@@ -92,9 +93,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-[#050505]">
       <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-2xl mx-auto">
-        <span className="text-xl font-bold">
-          Chat<span className="text-purple-500">Rate</span>
-        </span>
+        <Logo />
         <span className="text-sm text-gray-500">Step {step} of 4</span>
       </nav>
 

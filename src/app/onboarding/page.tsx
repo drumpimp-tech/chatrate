@@ -123,7 +123,7 @@ export default function OnboardingPage() {
               <label className="block text-sm text-gray-400 mb-2">Username</label>
               <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500">
                 <span className="px-4 text-gray-500 text-sm border-r border-white/10 py-3">
-                  chatrate-app.netlify.app/book/
+                  chatrate-app.com/book/
                 </span>
                 <input
                   type="text"

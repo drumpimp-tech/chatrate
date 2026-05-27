@@ -111,7 +111,7 @@ export default function DashboardPage() {
     )
   }
 
-  const bookingLink = `${process.env.NEXT_PUBLIC_APP_URL || "https://chatrate-app.netlify.app"}/book/${host.username}`
+  const bookingLink = `${process.env.NEXT_PUBLIC_APP_URL || "https://chatrate-app.com"}/book/${host.username}`
 
   return (
     <div className="min-h-screen bg-[#050505]">
@@ -156,7 +156,7 @@ export default function DashboardPage() {
               rel="noopener noreferrer"
               className="text-purple-400 text-sm hover:text-purple-300 font-mono"
             >
-              chatrate-app.netlify.app/book/{host.username}
+              chatrate-app.com/book/{host.username}
             </a>
             <button
               onClick={() => navigator.clipboard.writeText(bookingLink)}

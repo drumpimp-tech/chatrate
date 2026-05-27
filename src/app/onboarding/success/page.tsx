@@ -46,7 +46,7 @@ function SuccessContent() {
         <div className="bg-purple-900/20 border border-purple-500/30 rounded-2xl p-5 mb-8">
           <p className="text-sm text-gray-500 mb-2">Your booking link</p>
           <p className="text-purple-400 font-bold text-lg break-all">
-            chatrate-app.netlify.app/book/{username}
+            chatrate-app.com/book/{username}
           </p>
         </div>
         <div className="flex flex-col gap-3">

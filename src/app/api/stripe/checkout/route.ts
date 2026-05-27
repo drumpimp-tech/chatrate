@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
     const { username } = await req.json()
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://chatrate-app.netlify.app"
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://chatrate-app.com"
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",

@@ -93,7 +93,7 @@ export default function SettingsPage() {
           <div className="bg-purple-900/10 border border-purple-500/20 rounded-2xl p-5">
             <p className="text-sm text-gray-500 mb-1">Your booking link</p>
             <p className="text-purple-400 font-mono text-sm break-all">
-              chatrate-app.netlify.app/book/{host.username}
+              chatrate-app.com/book/{host.username}
             </p>
           </div>
 

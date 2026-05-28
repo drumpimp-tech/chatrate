@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 
-export function Logo({ size = 36, href = "/" }: { size?: number; href?: string }) {
+export function Logo({ size = 52, href = "/" }: { size?: number; href?: string }) {
   return (
     <Link href={href} className="flex items-center gap-2.5 group">
       <Image

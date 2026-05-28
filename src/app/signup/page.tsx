@@ -62,7 +62,7 @@ export default function SignupPage() {
     <div className="min-h-screen bg-[#050505] flex items-center justify-center px-4">
       <div className="max-w-sm w-full fade-up">
         <div className="text-center mb-8">
-          <Logo size={44} />
+          <Logo size={52} />
           <p className="text-gray-500 text-sm mt-1">
             {mode === "signup" ? "Create your expert page" : "Welcome back"}
           </p>

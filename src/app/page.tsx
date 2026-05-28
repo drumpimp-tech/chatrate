@@ -28,7 +28,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#050505]">
       {/* Nav */}
       <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-5xl mx-auto">
-        <Logo size={40} />
+        <Logo size={52} />
         <div className="flex items-center gap-3">
           <Link href="/signup" className="text-sm text-gray-400 hover:text-white transition-colors">
             Sign in

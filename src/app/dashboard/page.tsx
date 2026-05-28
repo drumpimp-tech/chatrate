@@ -53,7 +53,7 @@ export default function DashboardPage() {
 
   // Create invite state
   const [showInvite, setShowInvite] = useState(false)
-  const [inviteForm, setInviteForm] = useState({ clientName: "", clientEmail: "", scheduledAt: "", notes: "" })
+  const [inviteForm, setInviteForm] = useState({ clientName: "", clientEmail: "", scheduledAt: "", notes: "", isGroup: false, maxSeats: "4" })
   const [inviteCreating, setInviteCreating] = useState(false)
   const [inviteLink, setInviteLink] = useState("")
   const [inviteCopied, setInviteCopied] = useState(false)
@@ -76,7 +76,7 @@ export default function DashboardPage() {
       const res = await fetch("/api/bookings/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(inviteForm),
+        body: JSON.stringify({ ...inviteForm, maxSeats: parseInt(inviteForm.maxSeats) || 4 }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -308,6 +308,38 @@ export default function DashboardPage() {
                       className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-purple-500"
                     />
                   </div>
+
+                  {/* Group session toggle */}
+                  <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-white">Group session</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Multiple people join & pay separately</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setInviteForm((f) => ({ ...f, isGroup: !f.isGroup }))}
+                        className={`w-11 h-6 rounded-full transition-colors relative ${inviteForm.isGroup ? "bg-purple-600" : "bg-white/20"}`}
+                      >
+                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${inviteForm.isGroup ? "translate-x-5" : ""}`} />
+                      </button>
+                    </div>
+                    {inviteForm.isGroup && (
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1.5">Max seats</label>
+                        <input
+                          type="number"
+                          min="2"
+                          max="50"
+                          value={inviteForm.maxSeats}
+                          onChange={(e) => setInviteForm((f) => ({ ...f, maxSeats: e.target.value }))}
+                          className="w-24 bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
+                        />
+                        <p className="text-xs text-gray-600 mt-1">Each person gets their own card charge at call end</p>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     onClick={createInvite}
                     disabled={inviteCreating || !inviteForm.scheduledAt}

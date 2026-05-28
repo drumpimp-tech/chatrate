@@ -1,6 +1,6 @@
 import { createAdminClient, createClient } from "@/lib/supabase/server"
 
-// POST /api/bookings/invite — host creates a booking invite link
+// POST /api/bookings/invite — host creates a booking invite link (1-on-1 or group)
 export async function POST(req: Request) {
   try {
     const supabase = await createClient()
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
     const body = await req.json()
-    const { clientName, clientEmail, scheduledAt, serviceType, notes } = body
+    const { clientName, clientEmail, scheduledAt, serviceType, notes, isGroup, maxSeats } = body
 
     if (!scheduledAt) {
       return Response.json({ error: "Scheduled time is required" }, { status: 400 })
@@ -16,7 +16,6 @@ export async function POST(req: Request) {
 
     const admin = await createAdminClient()
 
-    // Get host record
     const { data: host } = await admin
       .from("hosts")
       .select("id, rate_type, rate, transcript_fee, service_type, stripe_secret_key")
@@ -26,12 +25,15 @@ export async function POST(req: Request) {
     if (!host) return Response.json({ error: "Host not found" }, { status: 404 })
     if (!host.stripe_secret_key) return Response.json({ error: "Stripe not connected" }, { status: 400 })
 
+    const groupSession = isGroup === true
+    const seats = groupSession ? Math.max(2, parseInt(maxSeats) || 2) : 1
+
     const { data: booking, error } = await admin
       .from("bookings")
       .insert({
         host_id: host.id,
-        client_name: clientName || null,
-        client_email: clientEmail || null,
+        client_name: groupSession ? null : (clientName || null),
+        client_email: groupSession ? null : (clientEmail || null),
         service_type: serviceType || host.service_type,
         pricing_model: host.rate_type,
         rate: host.rate,
@@ -40,6 +42,8 @@ export async function POST(req: Request) {
         scheduled_at: scheduledAt,
         status: "invited",
         notes: notes || null,
+        is_group: groupSession,
+        max_seats: seats,
       })
       .select()
       .single()
@@ -50,6 +54,8 @@ export async function POST(req: Request) {
     return Response.json({
       id: booking.id,
       inviteUrl: `${appUrl}/pay/${booking.id}`,
+      isGroup: groupSession,
+      maxSeats: seats,
     })
   } catch (e: unknown) {
     console.error(e)

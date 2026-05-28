@@ -18,6 +18,9 @@ type BookingInvite = {
   scheduled_at: string
   status: string
   notes: string | null
+  is_group: boolean
+  max_seats: number
+  seatsTaken: number
   host: {
     display_name: string
     avatar_url: string | null
@@ -167,13 +170,19 @@ export default function PayPage() {
     )
   }
 
-  if (booking?.status === "confirmed" || booking?.status === "in_progress" || booking?.status === "completed") {
+  // For 1-on-1: block if already confirmed. For group: block only if full or cancelled.
+  const isFull = booking?.is_group && (booking.seatsTaken ?? 0) >= (booking.max_seats ?? 1)
+  if (
+    (!booking?.is_group && (booking?.status === "confirmed" || booking?.status === "in_progress" || booking?.status === "completed")) ||
+    booking?.status === "cancelled" ||
+    isFull
+  ) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center text-center px-4">
         <div>
-          <div className="text-5xl mb-4">✅</div>
-          <h1 className="text-2xl font-bold mb-2">Already confirmed</h1>
-          <p className="text-gray-400">This booking has already been paid and confirmed.</p>
+          <div className="text-5xl mb-4">{isFull ? "🈵" : "✅"}</div>
+          <h1 className="text-2xl font-bold mb-2">{isFull ? "Session is full" : "Already confirmed"}</h1>
+          <p className="text-gray-400">{isFull ? "All seats have been claimed for this session." : "This booking has already been paid and confirmed."}</p>
         </div>
       </div>
     )
@@ -196,7 +205,20 @@ export default function PayPage() {
 
         {/* Invite banner */}
         <div className="bg-purple-900/10 border border-purple-500/20 rounded-2xl p-5">
-          <p className="text-xs text-purple-400 font-medium uppercase tracking-wider mb-3">Personal invite</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-purple-400 font-medium uppercase tracking-wider">
+              {booking.is_group ? "Group session" : "Personal invite"}
+            </p>
+            {booking.is_group && (
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                (booking.max_seats - booking.seatsTaken) <= 1
+                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                  : "bg-green-500/20 text-green-400 border border-green-500/30"
+              }`}>
+                {booking.max_seats - booking.seatsTaken} seat{booking.max_seats - booking.seatsTaken !== 1 ? "s" : ""} left
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-4">
             <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-purple-600">
               {booking.host.avatar_url ? (

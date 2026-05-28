@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatRate — How to Book a Call</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --purple: #7c3aed; --purple-light: #ede9fe; --dark: #1e1b4b;
+      --text: #1f2937; --muted: #6b7280; --border: #e5e7eb;
+      --bg: #f9fafb; --white: #ffffff;
+    }
+    body { font-family: 'Inter', -apple-system, sans-serif; color: var(--text); background: var(--white); font-size: 14px; line-height: 1.6; }
+
+    .cover {
+      background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+      color: white; min-height: 100vh; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; text-align: center; padding: 60px 40px; page-break-after: always;
+    }
+    .cover-logo { display: flex; align-items: center; gap: 16px; margin-bottom: 48px; }
+    .cover-logo img { width: 72px; height: 72px; border-radius: 18px; }
+    .cover-logo-text { font-size: 42px; font-weight: 800; letter-spacing: -1px; }
+    .cover-logo-text span { color: #c4b5fd; }
+    .cover h1 { font-size: 30px; font-weight: 700; margin-bottom: 16px; }
+    .cover p { font-size: 15px; color: rgba(255,255,255,0.65); max-width: 420px; line-height: 1.7; }
+    .cover-divider { width: 60px; height: 3px; background: #c4b5fd; border-radius: 2px; margin: 28px auto; }
+    .cover-meta { margin-top: 60px; font-size: 12px; color: rgba(255,255,255,0.35); }
+
+    .page { max-width: 720px; margin: 0 auto; padding: 60px 48px; }
+    .page-break { page-break-before: always; }
+
+    .section-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--purple); margin-bottom: 8px; }
+    h2 { font-size: 26px; font-weight: 800; color: var(--dark); letter-spacing: -0.5px; margin-bottom: 12px; }
+    h3 { font-size: 15px; font-weight: 700; color: var(--dark); margin-bottom: 8px; margin-top: 28px; }
+    p { color: var(--text); margin-bottom: 14px; line-height: 1.75; }
+    .subtitle { font-size: 15px; color: var(--muted); margin-bottom: 36px; line-height: 1.7; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    .steps { display: flex; flex-direction: column; gap: 20px; margin: 24px 0; }
+    .step { display: flex; gap: 20px; align-items: flex-start; }
+    .step-num { flex-shrink: 0; width: 36px; height: 36px; background: var(--purple); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; margin-top: 2px; }
+    .step-body h4 { font-size: 15px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+    .step-body p { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.6; }
+
+    .callout { border-radius: 12px; padding: 16px 20px; margin: 20px 0; display: flex; gap: 14px; align-items: flex-start; }
+    .callout.tip { background: #f5f3ff; border-left: 4px solid var(--purple); }
+    .callout.warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+    .callout.success { background: #f0fdf4; border-left: 4px solid #22c55e; }
+    .callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .callout-text { font-size: 13px; line-height: 1.65; color: var(--text); }
+    .callout-text strong { display: block; font-weight: 700; margin-bottom: 2px; }
+
+    .faq { margin: 24px 0; }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 18px 0; }
+    .faq-item:first-child { border-top: 1px solid var(--border); }
+    .faq-q { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
+    .faq-a { font-size: 13px; color: var(--muted); line-height: 1.65; }
+
+    .url-pill { display: inline-block; background: var(--purple-light); color: var(--purple); font-weight: 700; font-size: 13px; padding: 5px 13px; border-radius: 100px; font-family: monospace; }
+
+    .checklist { list-style: none; margin: 16px 0; }
+    .checklist li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text); margin-bottom: 10px; }
+    .checklist li::before { content: "✓"; color: #22c55e; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+
+    .footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+    .footer strong { color: var(--purple); }
+
+    @media print {
+      .cover { min-height: 100vh; }
+      .page { padding: 48px 40px; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="cover-logo">
+      <img src="/icon.png" alt="ChatRate" />
+      <div class="cover-logo-text">Chat<span>Rate</span></div>
+    </div>
+    <h1>How to Book a Call</h1>
+    <div class="cover-divider"></div>
+    <p>A quick guide to booking, paying, and joining a consultation with your expert on ChatRate.</p>
+    <div class="cover-meta">chatrate-app.com</div>
+  </div>
+
+  <!-- PAGE 1 — BOOKING -->
+  <div class="page">
+    <div class="section-label">Booking</div>
+    <h2>How to Book a Call</h2>
+    <p class="subtitle">The whole process takes under 2 minutes. Here's what to expect from the moment you land on your expert's page.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Visit the booking page</h4>
+          <p>Your expert will share a link like <span class="url-pill">chatrate-app.com/book/theirname</span> — open it in any browser on any device. No app download required.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Fill in your details</h4>
+          <p>Enter your name, email address, and the service you'd like. You'll see the expert's rate clearly displayed at the top — either a flat price per call or a per-minute rate.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Optional: add a transcript</h4>
+          <p>If the expert offers it, you can opt in to receive a full written transcript of the call by email after it ends. The fee is shown upfront — you won't be surprised.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Pick a time</h4>
+          <p>Select your preferred date and time. You'll receive a confirmation email with your call link as soon as the booking is made.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h4>Save your card</h4>
+          <p>Enter your payment card details. Your card is <strong>saved securely</strong> — it is <strong>not charged</strong> at this point. The charge only happens after your call ends, based on the actual time used (or the flat rate).</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-icon">✅</div>
+      <div class="callout-text">
+        <strong>Booking confirmed</strong>
+        After submitting, you'll see a confirmation page and receive an email with your call details and a join link. Save it — you'll need it at call time.
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="section-label">Payment</div>
+    <h2>How Pricing Works</h2>
+
+    <p>Experts on ChatRate can charge in one of two ways:</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:20px 0;">
+      <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:12px; padding:18px;">
+        <div style="font-size:22px; margin-bottom:10px;">⏱</div>
+        <div style="font-weight:700; font-size:14px; color:#1e1b4b; margin-bottom:4px;">Per Minute</div>
+        <div style="font-size:12px; color:#6b7280; line-height:1.5;">You're charged for the exact time the call lasts. A live cost ticker shows the running total during the call. Pay only for what you use.</div>
+      </div>
+      <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:12px; padding:18px;">
+        <div style="font-size:22px; margin-bottom:10px;">📋</div>
+        <div style="font-weight:700; font-size:14px; color:#1e1b4b; margin-bottom:4px;">Flat Rate</div>
+        <div style="font-size:12px; color:#6b7280; line-height:1.5;">One fixed price regardless of call length. You know the exact amount before booking — no surprises.</div>
+      </div>
+    </div>
+
+    <p>The charge is applied to your saved card <strong>immediately when the call ends</strong>. You'll receive an email receipt within a few minutes.</p>
+
+    <div class="callout warning">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-text">
+        <strong>Nothing is charged until after your call</strong>
+        Saving your card at booking is just an authorization hold to confirm your card is valid. Your card is only charged once the expert clicks "End Call."
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 2 — THE CALL + FAQ -->
+  <div class="page page-break">
+    <div class="section-label">The call</div>
+    <h2>Joining Your Call</h2>
+    <p class="subtitle">Calls happen directly in your browser — no software to install, no Zoom account needed.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Open your call link</h4>
+          <p>At the time of your booking, click the join link from your confirmation email. You can also find it on your booking confirmation page.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Allow camera and microphone</h4>
+          <p>Your browser will ask for permission to use your camera and microphone. Click "Allow" — without it, the expert won't be able to hear or see you.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Wait for the expert to join</h4>
+          <p>The timer only starts once both parties are connected. You won't be charged for wait time.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Have your call</h4>
+          <p>Talk, ask questions, get advice. If you're on per-minute pricing, a live cost ticker shows the running total so you're always in control of the time.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h4>Call ends → you're charged</h4>
+          <p>The expert ends the call, your card is charged, and you receive a receipt by email. If you opted in to a transcript, it will be included.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-text">
+        <strong>Best experience tips</strong>
+        Use Chrome or Edge for the most reliable call quality. A stable Wi-Fi connection is recommended. Use headphones to avoid echo.
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="section-label">Common questions</div>
+    <h2>FAQ</h2>
+
+    <div class="faq">
+      <div class="faq-item">
+        <div class="faq-q">Is my payment information secure?</div>
+        <div class="faq-a">Yes. Your card details are handled entirely by Stripe, a PCI-compliant payment processor trusted by millions of businesses. ChatRate never stores your full card number.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What if the expert doesn't show up?</div>
+        <div class="faq-a">If the expert doesn't join within a reasonable time, your card will not be charged. Contact the expert directly via the email in your confirmation, or reach out to us at drumpimp@gmail.com.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I get a refund?</div>
+        <div class="faq-a">Refund requests are handled between you and the expert. If you have a dispute, email us at drumpimp@gmail.com and we'll help mediate.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Will my call be recorded?</div>
+        <div class="faq-a">Calls are not recorded unless you explicitly opted in to the transcript add-on during booking. Transcripts are text-only (not video/audio recordings) and are sent only to you by email.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What devices can I use?</div>
+        <div class="faq-a">Any device with a modern browser — desktop, laptop, tablet, or phone. Chrome and Edge give the best experience. Safari on iPhone is also fully supported.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">How is my personal data used?</div>
+        <div class="faq-a">Your name and email are used to confirm your booking and send your receipt. We do not sell your data or use it for advertising. Read the full Privacy Policy at chatrate-app.com/privacy.</div>
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="callout success">
+      <div class="callout-icon">📧</div>
+      <div class="callout-text">
+        <strong>Need help?</strong>
+        Contact us at <strong>drumpimp@gmail.com</strong> — we typically respond within 24 hours.
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>ChatRate &nbsp;·&nbsp; <strong>chatrate-app.com</strong></div>
+      <div>Privacy Policy: <strong>chatrate-app.com/privacy</strong></div>
+    </div>
+  </div>
+
+</body>
+</html>

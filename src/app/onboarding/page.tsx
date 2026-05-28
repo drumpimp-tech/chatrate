@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { Logo } from "@/components/Logo"
+import { StripeHelpChat } from "@/components/StripeHelpChat"
 
 type Step = 1 | 2 | 3 | 4
 
@@ -286,6 +287,7 @@ export default function OnboardingPage() {
                 dashboard.stripe.com/apikeys
               </a>
             </div>
+            <StripeHelpChat />
             <Field
               label="Publishable key (pk_live_... or pk_test_...)"
               value={form.stripePublishableKey}

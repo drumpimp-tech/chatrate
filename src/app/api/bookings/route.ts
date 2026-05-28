@@ -52,11 +52,10 @@ export async function POST(request: Request) {
       serviceType,
       scheduledAt,
       transcriptOptedIn,
-      cardNumber,
-      cardExpiry,
-      cardCvc,
-      cardName,
+      paymentMethodId, // tokenized by Stripe Elements on the client
     } = body
+
+    if (!paymentMethodId) throw new Error("Missing payment method")
 
     const admin = await createAdminClient()
 
@@ -76,32 +75,22 @@ export async function POST(request: Request) {
       apiVersion: "2026-04-22.dahlia" as const,
     })
 
-    // 1. Create Stripe customer + save card on file (using host's Stripe)
+    // 1. Create Stripe customer and attach the already-tokenized payment method
     const customer = await hostStripe.customers.create({
       name: clientName,
       email: clientEmail,
       metadata: { source: "chatrate", hostUsername: host.username },
     })
 
-    const [expMonth, expYear] = cardExpiry.split("/")
-    const paymentMethod = await hostStripe.paymentMethods.create({
-      type: "card",
-      card: {
-        number: cardNumber.replace(/\s/g, ""),
-        exp_month: parseInt(expMonth),
-        exp_year: parseInt("20" + expYear),
-        cvc: cardCvc,
-      },
-      billing_details: { name: cardName, email: clientEmail },
-    })
-
-    await hostStripe.paymentMethods.attach(paymentMethod.id, {
+    await hostStripe.paymentMethods.attach(paymentMethodId, {
       customer: customer.id,
     })
 
     await hostStripe.customers.update(customer.id, {
-      invoice_settings: { default_payment_method: paymentMethod.id },
+      invoice_settings: { default_payment_method: paymentMethodId },
     })
+
+    const paymentMethod = { id: paymentMethodId }
 
     // 2. Create booking record
     const { data: booking, error: bookingError } = await admin

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatRate — Expert Setup Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --purple-mid: #c4b5fd;
+      --dark: #1e1b4b;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --white: #ffffff;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background: var(--white);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── Cover page ── */
+    .cover {
+      background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 60%, #7c3aed 100%);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 60px 40px;
+      page-break-after: always;
+    }
+
+    .cover-logo {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .cover-logo img {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+    }
+
+    .cover-logo-text {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .cover-logo-text span { color: #c4b5fd; }
+
+    .cover h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .cover p {
+      font-size: 16px;
+      color: rgba(255,255,255,0.7);
+      max-width: 440px;
+      line-height: 1.7;
+    }
+
+    .cover-divider {
+      width: 60px;
+      height: 3px;
+      background: #c4b5fd;
+      border-radius: 2px;
+      margin: 32px auto;
+    }
+
+    .cover-meta {
+      margin-top: 64px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Content pages ── */
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 60px 48px;
+    }
+
+    .page-break { page-break-before: always; }
+
+    /* ── Section headers ── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--dark);
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 8px;
+      margin-top: 28px;
+    }
+
+    p {
+      color: var(--text);
+      margin-bottom: 16px;
+      line-height: 1.75;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 36px 0;
+    }
+
+    /* ── Step cards ── */
+    .steps { display: flex; flex-direction: column; gap: 20px; margin: 28px 0; }
+
+    .step {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      background: var(--purple);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      margin-top: 2px;
+    }
+
+    .step-body h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 4px;
+    }
+
+    .step-body p {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin: 24px 0;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .callout.tip { background: #f5f3ff; border-left: 4px solid var(--purple); }
+    .callout.warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+    .callout.success { background: #f0fdf4; border-left: 4px solid #22c55e; }
+
+    .callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+    .callout-text { font-size: 13px; line-height: 1.65; color: var(--text); }
+    .callout-text strong { display: block; font-weight: 700; margin-bottom: 2px; }
+
+    /* ── Code/key display ── */
+    .key-example {
+      background: #1e1b4b;
+      color: #c4b5fd;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
+    /* ── URL pill ── */
+    .url-pill {
+      display: inline-block;
+      background: var(--purple-light);
+      color: var(--purple);
+      font-weight: 700;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      margin: 4px 0;
+    }
+
+    /* ── Feature grid ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .feature-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .feature-card .icon { font-size: 22px; margin-bottom: 10px; }
+    .feature-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; color: var(--dark); }
+    .feature-card p { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5; }
+
+    /* ── Money flow ── */
+    .flow {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 24px 0;
+    }
+
+    .flow-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .flow-row:last-child { border-bottom: none; }
+
+    .flow-arrow { color: var(--purple); font-size: 18px; }
+    .flow-label { font-size: 13px; color: var(--text); }
+    .flow-sub { font-size: 11px; color: var(--muted); }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+    th { background: var(--bg); text-align: left; padding: 10px 14px; font-weight: 700; border-bottom: 2px solid var(--border); color: var(--dark); }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .footer strong { color: var(--purple); }
+
+    /* ── Print ── */
+    @media print {
+      body { font-size: 13px; }
+      .cover { min-height: 100vh; }
+      .page { padding: 48px 40px; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════ COVER ═══════════════ -->
+  <div class="cover">
+    <div class="cover-logo">
+      <img src="/icon.png" alt="ChatRate" />
+      <div class="cover-logo-text">Chat<span>Rate</span></div>
+    </div>
+    <h1>Expert Setup Guide</h1>
+    <div class="cover-divider"></div>
+    <p>Everything you need to get your page live, connect payments, and start getting paid for your expertise.</p>
+    <div class="cover-meta">chatrate-app.com &nbsp;·&nbsp; Questions? drumpimp@gmail.com</div>
+  </div>
+
+  <!-- ═══════════════ PAGE 1 — OVERVIEW ═══════════════ -->
+  <div class="page">
+    <div class="section-label">Getting started</div>
+    <h2>Welcome to ChatRate</h2>
+    <p class="subtitle">ChatRate gives you a personal booking page where clients can schedule and pay for calls with you — consultations, coaching, feedback sessions, whatever you offer. You set the price. You keep the money.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">🔗</div>
+        <h4>Your own booking link</h4>
+        <p>Share one link. Clients book, pay, and join — no back-and-forth scheduling.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">💳</div>
+        <h4>Payments go to you</h4>
+        <p>Clients pay via your Stripe account. Money lands in your bank directly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">⏱</div>
+        <h4>Flat rate or per-minute</h4>
+        <p>Charge a fixed price per call, or bill by the minute with a live cost ticker.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📝</div>
+        <h4>Optional transcripts</h4>
+        <p>Clients can pay an add-on fee for a full transcript of the call, delivered by email.</p>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-text">
+        <strong>One-time activation fee</strong>
+        Getting your page live requires a one-time $4.99 payment at the end of onboarding. No monthly fees, ever.
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="section-label">The flow</div>
+    <h2>How it works</h2>
+
+    <div class="flow">
+      <div class="flow-row">
+        <div class="flow-arrow">①</div>
+        <div>
+          <div class="flow-label"><strong>You complete onboarding</strong></div>
+          <div class="flow-sub">Set your username, profile, rates, and connect Stripe. Pay $4.99 to activate.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-arrow">②</div>
+        <div>
+          <div class="flow-label"><strong>Client visits your booking page</strong></div>
+          <div class="flow-sub">chatrate-app.com/book/yourname — they see your bio, rate, and a booking form.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-arrow">③</div>
+        <div>
+          <div class="flow-label"><strong>Client saves their card</strong></div>
+          <div class="flow-sub">Card is saved securely via Stripe. Nothing is charged yet.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-arrow">④</div>
+        <div>
+          <div class="flow-label"><strong>Both parties join the call</strong></div>
+          <div class="flow-sub">Video call launches in-browser. Timer starts when you're both connected.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-arrow">⑤</div>
+        <div>
+          <div class="flow-label"><strong>Call ends → client is charged</strong></div>
+          <div class="flow-sub">Stripe charges the saved card for the time used (or flat rate). Receipt emailed automatically.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PAGE 2 — ONBOARDING ═══════════════ -->
+  <div class="page page-break">
+    <div class="section-label">Setup</div>
+    <h2>Onboarding — Step by Step</h2>
+    <p class="subtitle">The full setup takes about 5 minutes. Here's what each step asks for.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Choose your username</h4>
+          <p>This becomes the last part of your booking URL. Use your name or brand — keep it short and memorable. Only lowercase letters, numbers, and hyphens.<br/>
+          Example: <span class="url-pill">chatrate-app.com/book/janesmith</span></p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Build your profile</h4>
+          <p>Add your display name, a short bio (2–3 sentences about what you offer), and select your primary service type from the dropdown. This is what clients see on your booking page.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Set your rates</h4>
+          <p>Choose between two pricing models:</p>
+          <table style="margin-top: 10px;">
+            <tr>
+              <th>Model</th>
+              <th>How it works</th>
+              <th>Best for</th>
+            </tr>
+            <tr>
+              <td><strong>Per Minute</strong></td>
+              <td>Client pays for exact time used. Live ticker during call.</td>
+              <td>Open-ended consultations</td>
+            </tr>
+            <tr>
+              <td><strong>Flat Rate</strong></td>
+              <td>Fixed price per call, regardless of length.</td>
+              <td>Fixed-length sessions</td>
+            </tr>
+          </table>
+          <p style="margin-top: 12px;">You can also set an optional <strong>transcript add-on fee</strong> — clients pay extra to receive a full written transcript after the call. Set to $0 to disable.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Connect your Stripe account</h4>
+          <p>This is where call payments will land. You'll need two keys from your Stripe dashboard. See the next section for detailed instructions.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-icon">✅</div>
+      <div class="callout-text">
+        <strong>After onboarding</strong>
+        You'll pay the one-time $4.99 activation fee via Stripe. Once that clears, your page goes live instantly and you'll see your booking link.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PAGE 3 — STRIPE ═══════════════ -->
+  <div class="page page-break">
+    <div class="section-label">Payments</div>
+    <h2>Getting Your Stripe Keys</h2>
+    <p class="subtitle">ChatRate uses your own Stripe account to process call payments. This means money goes directly to your bank — we never hold or touch it.</p>
+
+    <h3>Don't have a Stripe account?</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Go to stripe.com</h4>
+          <p>Click <strong>"Start now"</strong> and create a free account with your email.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Complete identity verification</h4>
+          <p>Stripe requires your name, address, and last 4 digits of SSN (or business EIN) to activate live payments. This takes 2–5 minutes.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Connect your bank account</h4>
+          <p>Go to Settings → Bank accounts and add where you want payouts to land.</p>
+        </div>
+      </div>
+    </div>
+
+    <hr />
+
+    <h3>Already have Stripe? Get your API keys</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Open the Stripe Dashboard</h4>
+          <p>Go to <strong>dashboard.stripe.com</strong> and log in.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Navigate to API Keys</h4>
+          <p>Click <strong>Developers</strong> in the top-right corner, then select <strong>API keys</strong> from the left sidebar.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Copy both keys</h4>
+          <p>Your <strong>Publishable key</strong> is visible immediately. Click <strong>"Reveal live key"</strong> to see your Secret key. Copy both.</p>
+          <div class="key-example">
+            pk_live_51... &nbsp;← Publishable key (safe to share)<br/>
+            sk_live_51... &nbsp;← Secret key (keep private)
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Paste into ChatRate onboarding</h4>
+          <p>Enter both keys in the Step 4 fields and proceed to activate your account.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-text">
+        <strong>Keep your secret key private</strong>
+        Never share your <code>sk_live_</code> key publicly, paste it into chat, or commit it to code. ChatRate stores it encrypted and uses it only to charge clients for your calls.
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">🤖</div>
+      <div class="callout-text">
+        <strong>Need help? Ask the AI assistant</strong>
+        On Step 4 of onboarding, click <em>"Need help finding your Stripe keys?"</em> to open a chat assistant that will walk you through the process in real time.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PAGE 4 — DASHBOARD ═══════════════ -->
+  <div class="page page-break">
+    <div class="section-label">After you're live</div>
+    <h2>Using Your Dashboard</h2>
+    <p class="subtitle">Once activated, your dashboard at <strong>chatrate-app.com/dashboard</strong> is your control center.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">📅</div>
+        <h4>Upcoming bookings</h4>
+        <p>See all scheduled calls with client name, service, date, and a "Join call" button.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">💰</div>
+        <h4>Earnings history</h4>
+        <p>View every completed call with duration, amount charged, and payout status.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🟢</div>
+        <h4>Availability toggle</h4>
+        <p>Switch between Open and Closed instantly. When closed, your booking page shows as unavailable.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">⚙️</div>
+        <h4>Settings</h4>
+        <p>Update your bio, rates, service type, and view Stripe connection status anytime.</p>
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="section-label">Sharing</div>
+    <h2>Your Booking Link</h2>
+    <p>Your permanent booking link is:</p>
+    <div style="text-align:center; margin: 20px 0;">
+      <span class="url-pill">chatrate-app.com/book/<em>yourusername</em></span>
+    </div>
+    <p>Share it anywhere — social media bio, email signature, LinkedIn, website. When a client visits, they'll see your profile, rate, and a booking form. The whole process takes them under 2 minutes.</p>
+
+    <div class="callout tip">
+      <div class="callout-icon">📋</div>
+      <div class="callout-text">
+        <strong>Copy it from your dashboard</strong>
+        There's a one-click copy button next to your booking link on the main dashboard page.
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="section-label">Calls</div>
+    <h2>Running a Call</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Client books and saves their card</h4>
+          <p>You both receive a confirmation email with the room link when a booking is made.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Join from your dashboard</h4>
+          <p>At call time, click <strong>"Join call"</strong> next to the booking. The video room opens in your browser — no app download needed.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Timer starts when both are connected</h4>
+          <p>If you're on per-minute pricing, a running cost ticker shows the client the accumulating total in real time.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>End the call to charge</h4>
+          <p>Click <strong>"End Call"</strong>. Stripe immediately charges the client's saved card. A receipt is emailed to them automatically. If they opted into a transcript, that's included too.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-icon">💸</div>
+      <div class="callout-text">
+        <strong>When do I get paid?</strong>
+        Stripe typically deposits funds to your bank within 2 business days of a successful charge. You can track all payouts in your Stripe dashboard at dashboard.stripe.com/payouts.
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="footer">
+      <div>ChatRate &nbsp;·&nbsp; <strong>chatrate-app.com</strong></div>
+      <div>Questions? <strong>drumpimp@gmail.com</strong></div>
+    </div>
+  </div>
+
+</body>
+</html>

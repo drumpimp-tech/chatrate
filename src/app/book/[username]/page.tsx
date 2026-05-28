@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
 import { Logo } from "@/components/Logo"
+import { loadStripe, type Stripe as StripeType, type StripeCardElement } from "@stripe/stripe-js"
 
 type Host = {
   id: string
@@ -31,8 +32,15 @@ export default function BookPage() {
   const [form, setForm] = useState({
     clientName: "", clientEmail: "", serviceType: "",
     scheduledAt: "", transcriptOptedIn: false,
-    cardNumber: "", cardExpiry: "", cardCvc: "", cardName: "",
+    cardName: "", agreedToTerms: false,
   })
+
+  // Stripe Elements state
+  const [stripe, setStripe] = useState<StripeType | null>(null)
+  const [cardElement, setCardElement] = useState<StripeCardElement | null>(null)
+  const [cardReady, setCardReady] = useState(false)
+  const [setupClientSecret, setSetupClientSecret] = useState("")
+  const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch(`/api/hosts/${username}`)
@@ -47,6 +55,57 @@ export default function BookPage() {
       .catch(() => setLoading(false))
   }, [username])
 
+  // When entering Step 3: fetch SetupIntent + load Stripe Elements
+  useEffect(() => {
+    if (step !== 3 || !host) return
+
+    let mounted = true
+
+    async function initStripe() {
+      try {
+        const res = await fetch("/api/bookings/setup-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hostUsername: username }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Failed to initialize payment")
+
+        const stripeInstance = await loadStripe(data.publishableKey)
+        if (!stripeInstance || !mounted) return
+
+        setStripe(stripeInstance)
+        setSetupClientSecret(data.clientSecret)
+
+        // Mount CardElement after state settles
+        setTimeout(() => {
+          if (!cardRef.current || !mounted) return
+          const elements = stripeInstance.elements()
+          const card = elements.create("card", {
+            style: {
+              base: {
+                color: "#ffffff",
+                fontFamily: "Inter, system-ui, sans-serif",
+                fontSize: "16px",
+                "::placeholder": { color: "#4b5563" },
+                iconColor: "#a78bfa",
+              },
+              invalid: { color: "#f87171" },
+            },
+          })
+          card.mount(cardRef.current!)
+          card.on("ready", () => setCardReady(true))
+          setCardElement(card)
+        }, 100)
+      } catch (e: unknown) {
+        if (mounted) setError(e instanceof Error ? e.message : "Payment setup failed")
+      }
+    }
+
+    initStripe()
+    return () => { mounted = false }
+  }, [step, host, username])
+
   const priceLabel = host
     ? host.rate_type === "flat"
       ? `${formatCurrency(host.rate)} flat`
@@ -54,24 +113,37 @@ export default function BookPage() {
     : ""
 
   const handleSubmit = async () => {
+    if (!stripe || !cardElement || !setupClientSecret) return
     setSubmitting(true)
     setError("")
+
     try {
+      // Confirm the SetupIntent client-side — Stripe tokenizes the card
+      const { setupIntent, error: stripeError } = await stripe.confirmCardSetup(
+        setupClientSecret,
+        {
+          payment_method: {
+            card: cardElement,
+            billing_details: { name: form.cardName, email: form.clientEmail },
+          },
+        }
+      )
+
+      if (stripeError) throw new Error(stripeError.message)
+      if (!setupIntent?.payment_method) throw new Error("Card setup failed")
+
+      // Send only the payment method ID to our server
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          hostId: host?.id,
           hostUsername: username,
           clientName: form.clientName,
           clientEmail: form.clientEmail,
           serviceType: form.serviceType,
           scheduledAt: form.scheduledAt,
           transcriptOptedIn: form.transcriptOptedIn,
-          cardNumber: form.cardNumber,
-          cardExpiry: form.cardExpiry,
-          cardCvc: form.cardCvc,
-          cardName: form.cardName,
+          paymentMethodId: setupIntent.payment_method,
         }),
       })
       const data = await res.json()
@@ -141,7 +213,7 @@ export default function BookPage() {
           </div>
         </div>
 
-        {/* Steps */}
+        {/* Progress steps */}
         <div className="flex items-center gap-3 mb-8">
           {([1, 2, 3] as Step[]).map((s) => (
             <div key={s} className="flex items-center gap-3">
@@ -220,41 +292,59 @@ export default function BookPage() {
           </div>
         )}
 
-        {/* Step 3 */}
+        {/* Step 3 — Stripe Elements */}
         {step === 3 && (
           <div className="space-y-5 fade-up">
             <div>
               <h2 className="text-xl font-bold mb-1">Secure payment</h2>
               <p className="text-gray-500 text-sm">Card saved — charged only after the call ends.</p>
             </div>
+
             <Field label="Name on card" value={form.cardName} onChange={(v) => setForm((f) => ({ ...f, cardName: v }))} placeholder="Jane Smith" />
+
+            {/* Stripe Card Element */}
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Card number</label>
-              <input type="text" maxLength={19} value={form.cardNumber}
-                onChange={(e) => { const v = e.target.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim(); setForm((f) => ({ ...f, cardNumber: v })) }}
-                placeholder="4242 4242 4242 4242"
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 font-mono tracking-wider" />
+              <label className="block text-sm text-gray-400 mb-2">Card details</label>
+              <div
+                ref={cardRef}
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-4 min-h-[52px]"
+              />
+              {!cardReady && !error && (
+                <p className="text-xs text-gray-600 mt-1 animate-pulse">Loading secure card input...</p>
+              )}
+              <p className="text-xs text-gray-600 mt-1.5 flex items-center gap-1">
+                <span>🔒</span> Powered by Stripe. We never see your card number.
+              </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Expiry</label>
-                <input type="text" maxLength={5} value={form.cardExpiry}
-                  onChange={(e) => { let v = e.target.value.replace(/\D/g, ""); if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2); setForm((f) => ({ ...f, cardExpiry: v })) }}
-                  placeholder="MM/YY" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white font-mono" />
+
+            {/* Privacy agreement */}
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <div
+                onClick={() => setForm((f) => ({ ...f, agreedToTerms: !f.agreedToTerms }))}
+                className={`mt-0.5 w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${
+                  form.agreedToTerms ? "bg-purple-600 border-purple-600" : "border-white/20 group-hover:border-purple-500/50"
+                }`}
+              >
+                {form.agreedToTerms && <span className="text-white text-xs font-bold">✓</span>}
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">CVC</label>
-                <input type="text" maxLength={4} value={form.cardCvc}
-                  onChange={(e) => setForm((f) => ({ ...f, cardCvc: e.target.value.replace(/\D/g, "") }))}
-                  placeholder="•••" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white font-mono" />
-              </div>
-            </div>
+              <span className="text-sm text-gray-400 leading-relaxed">
+                I agree to the{" "}
+                <a href="/privacy" target="_blank" className="text-purple-400 hover:text-purple-300 underline underline-offset-2">
+                  Privacy Policy
+                </a>
+                . I understand my card will be saved securely and charged only after the call ends.
+              </span>
+            </label>
+
             {error && <div className="bg-red-900/20 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">{error}</div>}
+
             <div className="flex gap-3">
               <button onClick={() => setStep(2)} className="flex-1 border border-white/10 text-gray-300 py-3 rounded-xl hover:bg-white/5">← Back</button>
-              <button onClick={handleSubmit}
-                disabled={submitting || !form.cardName || form.cardNumber.length < 19 || form.cardExpiry.length < 5 || form.cardCvc.length < 3}
-                className="flex-[2] bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all">
+              <button
+                onClick={handleSubmit}
+                disabled={submitting || !cardReady || !form.cardName || !form.agreedToTerms || !stripe}
+                className="flex-[2] bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all"
+              >
                 {submitting ? "Booking..." : "Confirm Booking ✓"}
               </button>
             </div>

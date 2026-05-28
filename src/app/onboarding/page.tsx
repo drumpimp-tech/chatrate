@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { Logo } from "@/components/Logo"
@@ -18,6 +19,12 @@ export default function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
+  // Avatar state
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
   const [form, setForm] = useState({
     username: "",
     displayName: "",
@@ -29,6 +36,13 @@ export default function OnboardingPage() {
     stripePublishableKey: "",
     stripeSecretKey: "",
   })
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarFile(file)
+    setAvatarPreview(URL.createObjectURL(file))
+  }
 
   // Check username availability
   useEffect(() => {
@@ -51,6 +65,19 @@ export default function OnboardingPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Not logged in")
+
+      // Upload avatar first if one was selected
+      if (avatarFile) {
+        setAvatarUploading(true)
+        const fd = new FormData()
+        fd.append("avatar", avatarFile)
+        const upRes = await fetch("/api/me/avatar", { method: "POST", body: fd })
+        if (!upRes.ok) {
+          const d = await upRes.json()
+          throw new Error(d.error || "Avatar upload failed")
+        }
+        setAvatarUploading(false)
+      }
 
       // Save host record
       const res = await fetch("/api/me", {
@@ -163,6 +190,53 @@ export default function OnboardingPage() {
               <h1 className="text-2xl font-bold mb-1">Your profile</h1>
               <p className="text-gray-500 text-sm">This shows on your public booking page.</p>
             </div>
+
+            {/* Avatar upload */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-3">Profile photo <span className="text-gray-600">(optional)</span></label>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0 border-2 border-dashed border-white/20 hover:border-purple-500/60 transition-all group"
+                >
+                  {avatarPreview ? (
+                    <Image src={avatarPreview} alt="Preview" fill className="object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-white/[0.04] flex flex-col items-center justify-center gap-1">
+                      <span className="text-2xl">📷</span>
+                      <span className="text-[10px] text-gray-600 group-hover:text-purple-400 transition-colors">Upload</span>
+                    </div>
+                  )}
+                  {avatarPreview && (
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white text-xs font-medium">Change</span>
+                    </div>
+                  )}
+                </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+                <div className="text-sm text-gray-500 space-y-1">
+                  <p>Click to upload a photo</p>
+                  <p className="text-xs text-gray-600">JPEG, PNG, or WebP · Max 5 MB</p>
+                  {avatarPreview && (
+                    <button
+                      type="button"
+                      onClick={() => { setAvatarFile(null); setAvatarPreview(null) }}
+                      className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      Remove photo
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <Field
               label="Display name"
               value={form.displayName}
@@ -351,7 +425,7 @@ export default function OnboardingPage() {
                 disabled={submitting || !form.stripePublishableKey || !form.stripeSecretKey}
                 className="flex-[2] bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all"
               >
-                {submitting ? "Redirecting..." : "Activate for $4.99 →"}
+                {avatarUploading ? "Uploading photo..." : submitting ? "Redirecting..." : "Activate for $4.99 →"}
               </button>
             </div>
             <p className="text-center text-gray-600 text-xs">

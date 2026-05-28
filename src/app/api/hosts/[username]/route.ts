@@ -10,7 +10,7 @@ export async function GET(
     const { data, error } = await supabase
       .from("hosts")
       .select(
-        "id, username, display_name, bio, service_type, rate_type, rate, transcript_fee, is_available, is_activated"
+        "id, username, display_name, bio, service_type, rate_type, rate, transcript_fee, is_available, is_activated, avatar_url"
       )
       .eq("username", username)
       .single()

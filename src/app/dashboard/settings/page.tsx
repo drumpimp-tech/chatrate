@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
 import { Logo } from "@/components/Logo"
 
@@ -15,6 +16,7 @@ type Host = {
   transcript_fee: number
   is_available: boolean
   stripe_publishable_key: string | null
+  avatar_url: string | null
 }
 
 export default function SettingsPage() {
@@ -22,6 +24,13 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState<Host | null>(null)
+
+  // Avatar state
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarError, setAvatarError] = useState("")
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch("/api/me")
@@ -34,6 +43,34 @@ export default function SettingsPage() {
       })
       .catch(console.error)
   }, [])
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarFile(file)
+    setAvatarPreview(URL.createObjectURL(file))
+    setAvatarError("")
+  }
+
+  const handleAvatarUpload = async () => {
+    if (!avatarFile) return
+    setAvatarUploading(true)
+    setAvatarError("")
+    try {
+      const fd = new FormData()
+      fd.append("avatar", avatarFile)
+      const res = await fetch("/api/me/avatar", { method: "POST", body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Upload failed")
+      setForm((f) => f && { ...f, avatar_url: data.url })
+      setHost((h) => h && { ...h, avatar_url: data.url })
+      setAvatarFile(null)
+    } catch (e: unknown) {
+      setAvatarError(e instanceof Error ? e.message : "Upload failed")
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
 
   const handleSave = async () => {
     if (!form) return
@@ -73,6 +110,8 @@ export default function SettingsPage() {
       ? `${formatCurrency(form.rate)} flat rate per call`
       : `${formatCurrency(form.rate)} per minute`
 
+  const currentAvatar = avatarPreview || host.avatar_url
+
   return (
     <div className="min-h-screen bg-[#050505]">
       <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between">
@@ -96,6 +135,86 @@ export default function SettingsPage() {
               chatrate-app.com/book/{host.username}
             </p>
           </div>
+
+          {/* Profile Photo */}
+          <Section title="Profile Photo">
+            <div className="flex items-center gap-6">
+              {/* Avatar display */}
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                className="relative w-24 h-24 rounded-full overflow-hidden flex-shrink-0 border-2 border-dashed border-white/20 hover:border-purple-500/60 transition-all group"
+              >
+                {currentAvatar ? (
+                  <Image src={currentAvatar} alt="Profile photo" fill className="object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-purple-600/20 flex flex-col items-center justify-center gap-1">
+                    <span className="text-3xl font-bold text-purple-400">
+                      {host.display_name[0]?.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="text-white text-xs font-medium">📷 Change</span>
+                </div>
+              </button>
+
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+
+              <div className="flex-1 space-y-3">
+                <div className="text-sm text-gray-400">
+                  <p>Click your photo to change it.</p>
+                  <p className="text-xs text-gray-600 mt-0.5">JPEG, PNG, or WebP · Max 5 MB</p>
+                </div>
+
+                {avatarFile && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleAvatarUpload}
+                      disabled={avatarUploading}
+                      className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all"
+                    >
+                      {avatarUploading ? "Uploading..." : "Save photo"}
+                    </button>
+                    <button
+                      onClick={() => { setAvatarFile(null); setAvatarPreview(null) }}
+                      className="text-sm text-gray-500 hover:text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+
+                {avatarError && (
+                  <p className="text-xs text-red-400">{avatarError}</p>
+                )}
+
+                {!avatarFile && host.avatar_url && (
+                  <button
+                    onClick={async () => {
+                      await fetch("/api/me", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ avatar_url: null }),
+                      })
+                      setHost((h) => h && { ...h, avatar_url: null })
+                      setForm((f) => f && { ...f, avatar_url: null })
+                      setAvatarPreview(null)
+                    }}
+                    className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    Remove photo
+                  </button>
+                )}
+              </div>
+            </div>
+          </Section>
 
           {/* Profile */}
           <Section title="Profile">

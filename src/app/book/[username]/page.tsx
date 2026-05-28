@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
+import Image from "next/image"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
 import { Logo } from "@/components/Logo"
 import { loadStripe, type Stripe as StripeType, type StripeCardElement } from "@stripe/stripe-js"
@@ -16,6 +17,7 @@ type Host = {
   rate: number
   transcript_fee: number
   is_available: boolean
+  avatar_url: string | null
 }
 
 type Step = 1 | 2 | 3
@@ -193,8 +195,14 @@ export default function BookPage() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Host card */}
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 mb-8 flex items-start gap-4">
-          <div className="w-14 h-14 rounded-xl bg-purple-600 flex items-center justify-center text-2xl font-bold flex-shrink-0">
-            {host.display_name[0]}
+          <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-purple-600">
+            {host.avatar_url ? (
+              <Image src={host.avatar_url} alt={host.display_name} fill className="object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-2xl font-bold">
+                {host.display_name[0]}
+              </div>
+            )}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">

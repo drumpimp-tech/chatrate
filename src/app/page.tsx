@@ -30,6 +30,9 @@ export default function HomePage() {
       <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between max-w-5xl mx-auto">
         <Logo size={52} />
         <div className="flex items-center gap-3">
+          <Link href="/guide" className="text-sm text-gray-400 hover:text-white transition-colors">
+            Guide
+          </Link>
           <Link href="/signup" className="text-sm text-gray-400 hover:text-white transition-colors">
             Sign in
           </Link>

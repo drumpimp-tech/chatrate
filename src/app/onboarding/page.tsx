@@ -281,11 +281,18 @@ export default function OnboardingPage() {
                 Call payments go directly to your Stripe account. We never touch your money.
               </p>
             </div>
-            <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-4 text-sm text-blue-300">
-              💡 Get these from{" "}
-              <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="underline">
-                dashboard.stripe.com/apikeys
-              </a>
+            <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-4 text-sm text-blue-300 space-y-2">
+              <p>
+                💡 Get these from{" "}
+                <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="underline">
+                  dashboard.stripe.com/apikeys
+                </a>
+              </p>
+              <p>
+                <a href="/guide#stripe" target="_blank" rel="noopener noreferrer" className="underline text-purple-400 hover:text-purple-300">
+                  📖 Step-by-step Stripe setup guide →
+                </a>
+              </p>
             </div>
             <StripeHelpChat />
             <Field

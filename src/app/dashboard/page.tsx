@@ -8,6 +8,8 @@ import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { Logo } from "@/components/Logo"
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://chatrate-app.com"
+
 type Booking = {
   id: string
   client_name: string
@@ -49,6 +51,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
 
+  // Create invite state
+  const [showInvite, setShowInvite] = useState(false)
+  const [inviteForm, setInviteForm] = useState({ clientName: "", clientEmail: "", scheduledAt: "", notes: "" })
+  const [inviteCreating, setInviteCreating] = useState(false)
+  const [inviteLink, setInviteLink] = useState("")
+  const [inviteCopied, setInviteCopied] = useState(false)
+
   useEffect(() => {
     Promise.all([
       fetch("/api/bookings").then((r) => r.json()),
@@ -60,8 +69,36 @@ export default function DashboardPage() {
     })
   }, [])
 
+  const createInvite = async () => {
+    if (!inviteForm.scheduledAt) return
+    setInviteCreating(true)
+    try {
+      const res = await fetch("/api/bookings/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inviteForm),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setInviteLink(data.inviteUrl)
+      // Add the new booking to state
+      const newBooking = await fetch("/api/bookings").then((r) => r.json())
+      if (Array.isArray(newBooking)) setBookings(newBooking)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setInviteCreating(false)
+    }
+  }
+
+  const copyInviteLink = (url: string) => {
+    navigator.clipboard.writeText(url)
+    setInviteCopied(true)
+    setTimeout(() => setInviteCopied(false), 2000)
+  }
+
   const upcoming = bookings.filter((b) =>
-    ["confirmed", "pending", "in_progress"].includes(b.status)
+    ["confirmed", "pending", "in_progress", "invited"].includes(b.status)
   )
   const past = bookings.filter((b) => b.status === "completed")
   const totalEarnings = past.reduce((sum, b) => sum + (b.amount_charged ?? 0), 0)
@@ -211,6 +248,101 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Create Invite */}
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold">Send a payment invite</p>
+              <p className="text-gray-500 text-sm mt-0.5">Create a link to send to your client — they pay, you call.</p>
+            </div>
+            <button
+              onClick={() => { setShowInvite((v) => !v); setInviteLink("") }}
+              className="bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold px-4 py-2 rounded-xl transition-all flex-shrink-0"
+            >
+              {showInvite ? "✕ Cancel" : "+ New Invite"}
+            </button>
+          </div>
+
+          {showInvite && (
+            <div className="mt-5 space-y-4 border-t border-white/[0.05] pt-5">
+              {!inviteLink ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1.5">Client name <span className="text-gray-600">(optional)</span></label>
+                      <input
+                        type="text"
+                        value={inviteForm.clientName}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, clientName: e.target.value }))}
+                        placeholder="Jane Smith"
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1.5">Client email <span className="text-gray-600">(optional)</span></label>
+                      <input
+                        type="email"
+                        value={inviteForm.clientEmail}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, clientEmail: e.target.value }))}
+                        placeholder="jane@email.com"
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1.5">Date & time <span className="text-red-400">*</span></label>
+                    <input
+                      type="datetime-local"
+                      value={inviteForm.scheduledAt}
+                      onChange={(e) => setInviteForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1.5">Note to client <span className="text-gray-600">(optional)</span></label>
+                    <input
+                      type="text"
+                      value={inviteForm.notes}
+                      onChange={(e) => setInviteForm((f) => ({ ...f, notes: e.target.value }))}
+                      placeholder="e.g. &quot;Looking forward to our music consultation!&quot;"
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <button
+                    onClick={createInvite}
+                    disabled={inviteCreating || !inviteForm.scheduledAt}
+                    className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all"
+                  >
+                    {inviteCreating ? "Creating..." : "Generate invite link →"}
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-green-400 font-medium">✓ Invite created — send this link to your client:</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 font-mono text-purple-400 text-xs truncate">
+                      {inviteLink}
+                    </div>
+                    <button
+                      onClick={() => copyInviteLink(inviteLink)}
+                      className="flex-shrink-0 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-all"
+                    >
+                      {inviteCopied ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-600">Your client opens this link, adds their card, and confirms. You&apos;ll get an email when they do.</p>
+                  <button
+                    onClick={() => { setInviteLink(""); setInviteForm({ clientName: "", clientEmail: "", scheduledAt: "", notes: "" }) }}
+                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    + Create another invite
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Bookings tabs */}
         <div className="flex gap-1 mb-6">
           <TabBtn active={activeTab === "upcoming"} onClick={() => setActiveTab("upcoming")}>
@@ -270,36 +402,72 @@ function TabBtn({ children, active, onClick }: { children: React.ReactNode; acti
 
 function UpcomingCard({ booking }: { booking: Booking }) {
   const isLive = booking.status === "in_progress"
+  const isInvited = booking.status === "invited"
+  const [copied, setCopied] = useState(false)
+
+  const inviteUrl = `${APP_URL}/pay/${booking.id}`
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(inviteUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
-    <div className={`bg-white/[0.03] border rounded-2xl p-5 flex items-center justify-between gap-4 ${isLive ? "border-red-500/30" : "border-white/[0.06]"}`}>
-      <div className="flex items-center gap-4">
-        {isLive && (
-          <span className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-full px-2 py-0.5 text-red-400 text-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-            LIVE
-          </span>
-        )}
-        <div>
-          <p className="font-semibold">{booking.client_name}</p>
-          <p className="text-gray-500 text-sm">{booking.service_type}</p>
+    <div className={`bg-white/[0.03] border rounded-2xl p-5 ${
+      isLive ? "border-red-500/30" : isInvited ? "border-amber-500/20" : "border-white/[0.06]"
+    }`}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          {isLive && (
+            <span className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-full px-2 py-0.5 text-red-400 text-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              LIVE
+            </span>
+          )}
+          {isInvited && (
+            <span className="bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full">
+              ⏳ Awaiting payment
+            </span>
+          )}
+          <div>
+            <p className="font-semibold">{booking.client_name || <span className="text-gray-500 italic">Client pending</span>}</p>
+            <p className="text-gray-500 text-sm">{booking.service_type}</p>
+          </div>
         </div>
+        <div className="text-right hidden sm:block">
+          <p className="text-sm font-medium">{format(new Date(booking.scheduled_at), "MMM d, h:mm a")}</p>
+          <p className="text-gray-500 text-xs">
+            {booking.pricing_model === "flat"
+              ? formatCurrency(booking.rate) + " flat"
+              : formatCurrency(booking.rate) + "/min"}
+          </p>
+        </div>
+        {isInvited ? (
+          <button
+            onClick={copyLink}
+            className="flex-shrink-0 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-300 font-bold px-4 py-2.5 rounded-xl transition-all text-sm"
+          >
+            {copied ? "Copied!" : "Copy link"}
+          </button>
+        ) : (
+          <Link
+            href={`/call/${booking.id}?host=true`}
+            className={`flex-shrink-0 font-bold px-5 py-2.5 rounded-xl transition-all text-sm ${
+              isLive ? "bg-red-600 hover:bg-red-500 text-white" : "bg-purple-600 hover:bg-purple-500 text-white"
+            }`}
+          >
+            {isLive ? "Rejoin →" : "Join Call →"}
+          </Link>
+        )}
       </div>
-      <div className="text-right hidden sm:block">
-        <p className="text-sm font-medium">{format(new Date(booking.scheduled_at), "MMM d, h:mm a")}</p>
-        <p className="text-gray-500 text-xs">
-          {booking.pricing_model === "flat"
-            ? formatCurrency(booking.rate) + " flat"
-            : formatCurrency(booking.rate) + "/min"}
-        </p>
-      </div>
-      <Link
-        href={`/call/${booking.id}?host=true`}
-        className={`flex-shrink-0 font-bold px-5 py-2.5 rounded-xl transition-all text-sm ${
-          isLive ? "bg-red-600 hover:bg-red-500 text-white" : "bg-purple-600 hover:bg-purple-500 text-white"
-        }`}
-      >
-        {isLive ? "Rejoin →" : "Join Call →"}
-      </Link>
+      {isInvited && (
+        <div className="mt-3 flex items-center gap-2">
+          <div className="flex-1 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-1.5 font-mono text-purple-400 text-xs truncate">
+            {inviteUrl}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

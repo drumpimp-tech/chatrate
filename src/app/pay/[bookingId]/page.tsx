@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
-import Image from "next/image"
 import { Logo } from "@/components/Logo"
 import { formatCurrency } from "@/lib/utils"
 import { loadStripe, type Stripe as StripeType, type StripeCardElement } from "@stripe/stripe-js"
@@ -201,7 +200,8 @@ export default function PayPage() {
           <div className="flex items-center gap-4">
             <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-purple-600">
               {booking.host.avatar_url ? (
-                <Image src={booking.host.avatar_url} alt={booking.host.display_name} fill className="object-cover" />
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={booking.host.avatar_url} alt={booking.host.display_name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xl font-bold">
                   {booking.host.display_name[0]}

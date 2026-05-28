@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { Logo } from "@/components/Logo"
@@ -201,7 +200,8 @@ export default function OnboardingPage() {
                   className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0 border-2 border-dashed border-white/20 hover:border-purple-500/60 transition-all group"
                 >
                   {avatarPreview ? (
-                    <Image src={avatarPreview} alt="Preview" fill className="object-cover" />
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-white/[0.04] flex flex-col items-center justify-center gap-1">
                       <span className="text-2xl">📷</span>

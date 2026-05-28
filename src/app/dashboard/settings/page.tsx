@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
 import { Logo } from "@/components/Logo"
 
@@ -146,7 +145,8 @@ export default function SettingsPage() {
                 className="relative w-24 h-24 rounded-full overflow-hidden flex-shrink-0 border-2 border-dashed border-white/20 hover:border-purple-500/60 transition-all group"
               >
                 {currentAvatar ? (
-                  <Image src={currentAvatar} alt="Profile photo" fill className="object-cover" />
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={currentAvatar} alt="Profile photo" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-purple-600/20 flex flex-col items-center justify-center gap-1">
                     <span className="text-3xl font-bold text-purple-400">

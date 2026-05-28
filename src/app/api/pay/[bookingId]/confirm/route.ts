@@ -21,20 +21,27 @@ export async function POST(
 
     const admin = await createAdminClient()
 
-    // Get booking + host
+    // Get booking
     const { data: booking, error: bookingErr } = await admin
       .from("bookings")
-      .select("*, hosts(*)")
+      .select("id, host_id, service_type, pricing_model, rate, transcript_fee, scheduled_at, status")
       .eq("id", bookingId)
       .single()
 
     if (bookingErr || !booking) throw new Error("Booking not found")
     if (booking.status !== "invited") throw new Error("This invite has already been used")
 
-    const host = booking.hosts
-    if (!host?.stripe_secret_key) throw new Error("Host Stripe not connected")
+    // Get host separately
+    const { data: host, error: hostErr } = await admin
+      .from("hosts")
+      .select("id, username, stripe_secret_key, transcript_fee")
+      .eq("id", booking.host_id)
+      .single()
 
-    const hostStripe = new Stripe(host.stripe_secret_key, {
+    if (hostErr || !host) throw new Error("Host not found")
+    if (!host.stripe_secret_key) throw new Error("Host Stripe not connected")
+
+    const hostStripe = new Stripe(host.stripe_secret_key as string, {
       apiVersion: "2026-04-22.dahlia" as const,
     })
 
@@ -53,7 +60,7 @@ export async function POST(
     // Create Daily.co room
     const { url: dailyRoomUrl, name: dailyRoomName } = await createDailyRoom(bookingId)
 
-    // Update booking with client info, payment method, room, and status
+    // Update booking
     await admin
       .from("bookings")
       .update({
@@ -69,14 +76,14 @@ export async function POST(
       })
       .eq("id", bookingId)
 
-    // Send confirmation emails
+    // Send emails
     await Promise.allSettled([
       sendBookingConfirmationToClient({
         clientName,
         clientEmail,
         serviceType: booking.service_type,
         scheduledAt: booking.scheduled_at,
-        pricingModel: booking.pricing_model,
+        pricingModel: booking.pricing_model as "flat" | "per_minute",
         rate: booking.rate,
         transcriptOptedIn,
         transcriptFee: host.transcript_fee,
@@ -87,7 +94,7 @@ export async function POST(
         clientEmail,
         serviceType: booking.service_type,
         scheduledAt: booking.scheduled_at,
-        pricingModel: booking.pricing_model,
+        pricingModel: booking.pricing_model as "flat" | "per_minute",
         rate: booking.rate,
         transcriptOptedIn,
       }),

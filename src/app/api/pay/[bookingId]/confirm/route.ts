@@ -71,7 +71,7 @@ export async function POST(
       let roomName = booking.daily_room_name
 
       if (!roomUrl) {
-        const room = await createDailyRoom(bookingId)
+        const room = await createDailyRoom(bookingId, booking.max_seats ?? 10)
         roomUrl = room.url
         roomName = room.name
         await admin.from("bookings").update({

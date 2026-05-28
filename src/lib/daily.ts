@@ -1,6 +1,6 @@
 const DAILY_API_URL = "https://api.daily.co/v1"
 
-export async function createDailyRoom(bookingId: string): Promise<{
+export async function createDailyRoom(bookingId: string, maxParticipants = 2): Promise<{
   url: string
   name: string
 }> {
@@ -19,7 +19,8 @@ export async function createDailyRoom(bookingId: string): Promise<{
         enable_chat: false,
         start_video_off: false,
         start_audio_off: false,
-        max_participants: 2,
+        // +1 to include the host alongside all paying participants
+        max_participants: maxParticipants + 1,
         exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 24 hours
       },
     }),

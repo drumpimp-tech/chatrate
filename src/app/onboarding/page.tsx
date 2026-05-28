@@ -301,6 +301,29 @@ export default function OnboardingPage() {
               placeholder="sk_live_..."
             />
 
+            {/* Cost breakdown */}
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-400 mb-1">What you'll pay to run ChatRate</h3>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">ChatRate activation</span>
+                <span className="text-white font-semibold">$4.99 once</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Stripe processing fee</span>
+                <span className="text-gray-300">2.9% + 30¢ per charge</span>
+              </div>
+              <div className="flex items-start justify-between text-sm gap-4">
+                <div>
+                  <span className="text-gray-400">Video calls (Daily.co)</span>
+                  <p className="text-xs text-green-400/80 mt-0.5">Free for your first ~83 hrs/month</p>
+                </div>
+                <span className="text-green-400 font-semibold whitespace-nowrap">Free tier</span>
+              </div>
+              <div className="border-t border-white/[0.06] pt-3 text-xs text-gray-600">
+                Daily.co provides 10,000 free participant-minutes per month. That&apos;s roughly 83 hours of 1-on-1 calls before any video fees apply — more than enough to get started.
+              </div>
+            </div>
+
             {/* Summary */}
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-2">
               <h3 className="text-sm font-semibold text-gray-400 mb-3">Your page preview</h3>

@@ -364,7 +364,7 @@ export default function DashboardPage() {
                   </div>
                   <p className="text-xs text-gray-600">Your client opens this link, adds their card, and confirms. You&apos;ll get an email when they do.</p>
                   <button
-                    onClick={() => { setInviteLink(""); setInviteForm({ clientName: "", clientEmail: "", scheduledAt: "", notes: "" }) }}
+                    onClick={() => { setInviteLink(""); setInviteForm({ clientName: "", clientEmail: "", scheduledAt: "", notes: "", isGroup: false, maxSeats: "5" }) }}
                     className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
                   >
                     + Create another invite

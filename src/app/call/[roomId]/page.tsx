@@ -141,6 +141,8 @@ function CallRoomContent() {
     }
 
     const endedAt = new Date().toISOString()
+    // Use started_at from event, DB, or fall back to now (gives 0 duration rather than epoch)
+    const startedAt = startedAtRef.current || booking.started_at || endedAt
 
     // Mark as completed + trigger charge
     await fetch(`/api/bookings/${bookingId}`, {
@@ -149,7 +151,7 @@ function CallRoomContent() {
       body: JSON.stringify({
         status: "completed",
         ended_at: endedAt,
-        started_at: startedAtRef.current,
+        started_at: startedAt,
       }),
     })
 
@@ -397,7 +399,7 @@ function CallRoomContent() {
         {isHost && (
           <button
             onClick={endCall}
-            disabled={ending || callState !== "connected"}
+            disabled={ending}
             className="bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-8 py-3 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
           >
             {ending ? (

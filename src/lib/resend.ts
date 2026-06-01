@@ -32,7 +32,7 @@ export async function sendBookingConfirmationToClient({
       : `${formatCurrency(rate)}/min`
 
   await resend.emails.send({
-    from: "ChatRate <noreply@chatrate.app>",
+    from: "ChatRate <noreply@chatrate-app.com>",
     to: clientEmail,
     subject: "Your ChatRate call is confirmed ✓",
     html: `
@@ -96,7 +96,7 @@ export async function sendBookingNotificationToHost({
     </tr>` : ""
 
   await resend.emails.send({
-    from: "ChatRate <noreply@chatrate.app>",
+    from: "ChatRate <noreply@chatrate-app.com>",
     to: hostEmail || HOST_EMAIL,
     subject: `${originalScheduledAt ? "⚠️ Time change — " : ""}New booking: ${clientName} — ${serviceType}`,
     html: `
@@ -138,7 +138,7 @@ export async function sendPostCallReceipt({
   const minutes = Math.ceil(durationSeconds / 60)
 
   await resend.emails.send({
-    from: "ChatRate <noreply@chatrate.app>",
+    from: "ChatRate <noreply@chatrate-app.com>",
     to: clientEmail,
     subject: "ChatRate call receipt",
     html: `

@@ -367,12 +367,12 @@ export default function DashboardPage() {
                         type="date"
                         value={inviteForm.date}
                         onChange={(e) => setInviteForm((f) => ({ ...f, date: e.target.value }))}
-                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+                        className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
                       />
                       <select
                         value={inviteForm.time}
                         onChange={(e) => setInviteForm((f) => ({ ...f, time: e.target.value }))}
-                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+                        className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
                       >
                         <option value="">Select time…</option>
                         {TIME_OPTIONS.map((t) => (

@@ -67,6 +67,7 @@ export async function sendBookingNotificationToHost({
   pricingModel,
   rate,
   transcriptOptedIn,
+  hostEmail,
 }: {
   clientName: string
   clientEmail: string
@@ -75,6 +76,7 @@ export async function sendBookingNotificationToHost({
   pricingModel: "flat" | "per_minute"
   rate: number
   transcriptOptedIn: boolean
+  hostEmail?: string
 }) {
   const priceText =
     pricingModel === "flat"
@@ -83,7 +85,7 @@ export async function sendBookingNotificationToHost({
 
   await resend.emails.send({
     from: "ChatRate <noreply@chatrate.app>",
-    to: HOST_EMAIL,
+    to: hostEmail || HOST_EMAIL,
     subject: `New booking: ${clientName} — ${serviceType}`,
     html: `
       <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; background: #0a0a0a; color: #fff; padding: 40px; border-radius: 12px;">

@@ -37,6 +37,10 @@ export async function POST(
     if (hostErr || !host) throw new Error("Host not found")
     if (!host.stripe_secret_key) throw new Error("Host Stripe not connected")
 
+    // Get host's email from auth so notification goes to the right person
+    const { data: { user: hostUser } } = await admin.auth.admin.getUserById(booking.host_id)
+    const hostEmail = hostUser?.email
+
     // ── GROUP SESSION ──────────────────────────────────────────────────
     if (booking.is_group) {
       if (booking.status === "cancelled") throw new Error("This session has been cancelled")
@@ -111,6 +115,7 @@ export async function POST(
           pricingModel: booking.pricing_model as "flat" | "per_minute",
           rate: booking.rate,
           transcriptOptedIn: false,
+          hostEmail,
         }),
       ])
 
@@ -169,6 +174,7 @@ export async function POST(
         pricingModel: booking.pricing_model as "flat" | "per_minute",
         rate: booking.rate,
         transcriptOptedIn,
+        hostEmail,
       }),
     ])
 

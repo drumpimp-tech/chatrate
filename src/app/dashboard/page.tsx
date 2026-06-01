@@ -75,7 +75,6 @@ export default function DashboardPage() {
   }, [])
 
   const createInvite = async () => {
-    if (!inviteForm.scheduledAt) return
     setInviteCreating(true)
     try {
       const res = await fetch("/api/bookings/invite", {
@@ -328,7 +327,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1.5">Date & time <span className="text-red-400">*</span></label>
+                    <label className="block text-xs text-gray-500 mb-1.5">Date & time <span className="text-gray-600">(optional — client can pick if left blank)</span></label>
                     <input
                       type="datetime-local"
                       value={inviteForm.scheduledAt}
@@ -380,7 +379,7 @@ export default function DashboardPage() {
 
                   <button
                     onClick={createInvite}
-                    disabled={inviteCreating || !inviteForm.scheduledAt}
+                    disabled={inviteCreating}
                     className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all"
                   >
                     {inviteCreating ? "Creating..." : "Generate invite link →"}

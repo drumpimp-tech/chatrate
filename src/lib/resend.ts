@@ -64,6 +64,7 @@ export async function sendBookingNotificationToHost({
   clientEmail,
   serviceType,
   scheduledAt,
+  originalScheduledAt,
   pricingModel,
   rate,
   transcriptOptedIn,
@@ -73,6 +74,7 @@ export async function sendBookingNotificationToHost({
   clientEmail: string
   serviceType: string
   scheduledAt: string
+  originalScheduledAt?: string
   pricingModel: "flat" | "per_minute"
   rate: number
   transcriptOptedIn: boolean
@@ -83,17 +85,30 @@ export async function sendBookingNotificationToHost({
       ? `${formatCurrency(rate)} flat rate`
       : `${formatCurrency(rate)}/min`
 
+  const timeChangeAlert = originalScheduledAt ? `
+    <tr>
+      <td colspan="2" style="padding: 10px 0;">
+        <div style="background: #7c2d12; border: 1px solid #ea580c; border-radius: 8px; padding: 12px 16px;">
+          <p style="color: #fdba74; font-weight: bold; margin: 0 0 6px;">⚠️ Client requested a different time</p>
+          <p style="color: #888; margin: 0; font-size: 13px;">Originally scheduled: ${new Date(originalScheduledAt).toLocaleString()}</p>
+        </div>
+      </td>
+    </tr>` : ""
+
   await resend.emails.send({
     from: "ChatRate <noreply@chatrate.app>",
     to: hostEmail || HOST_EMAIL,
-    subject: `New booking: ${clientName} — ${serviceType}`,
+    subject: `${originalScheduledAt ? "⚠️ Time change — " : ""}New booking: ${clientName} — ${serviceType}`,
     html: `
       <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; background: #0a0a0a; color: #fff; padding: 40px; border-radius: 12px;">
         <h1 style="color: #a855f7;">New ChatRate Booking</h1>
         <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
+          ${timeChangeAlert}
           <tr><td style="color: #888; padding: 8px 0;">Client</td><td style="font-weight: bold;">${clientName} (${clientEmail})</td></tr>
           <tr><td style="color: #888; padding: 8px 0;">Service</td><td style="font-weight: bold;">${serviceType}</td></tr>
-          <tr><td style="color: #888; padding: 8px 0;">Scheduled</td><td style="font-weight: bold;">${new Date(scheduledAt).toLocaleString()}</td></tr>
+          <tr><td style="color: #888; padding: 8px 0; color: ${originalScheduledAt ? "#fb923c" : "#888"};">
+            ${originalScheduledAt ? "Requested time" : "Scheduled"}
+          </td><td style="font-weight: bold; color: ${originalScheduledAt ? "#fb923c" : "#fff"};">${new Date(scheduledAt).toLocaleString()}</td></tr>
           <tr><td style="color: #888; padding: 8px 0;">Rate</td><td style="font-weight: bold;">${priceText}</td></tr>
           <tr><td style="color: #888; padding: 8px 0;">Transcript</td><td style="font-weight: bold;">${transcriptOptedIn ? "Yes (opted in)" : "No"}</td></tr>
         </table>

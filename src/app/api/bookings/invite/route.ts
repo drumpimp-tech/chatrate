@@ -10,10 +10,6 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { clientName, clientEmail, scheduledAt, serviceType, notes, isGroup, maxSeats } = body
 
-    if (!scheduledAt) {
-      return Response.json({ error: "Scheduled time is required" }, { status: 400 })
-    }
-
     const admin = await createAdminClient()
 
     const { data: host } = await admin
@@ -39,7 +35,7 @@ export async function POST(req: Request) {
         rate: host.rate,
         transcript_opted_in: false,
         transcript_fee: host.transcript_fee,
-        scheduled_at: scheduledAt,
+        scheduled_at: scheduledAt || null,
         status: "invited",
         notes: notes || null,
         is_group: groupSession,

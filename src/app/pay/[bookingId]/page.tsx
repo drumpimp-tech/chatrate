@@ -15,7 +15,7 @@ type BookingInvite = {
   pricing_model: "flat" | "per_minute"
   rate: number
   transcript_fee: number
-  scheduled_at: string
+  scheduled_at: string | null
   status: string
   notes: string | null
   is_group: boolean
@@ -39,6 +39,8 @@ export default function PayPage() {
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [clientDate, setClientDate] = useState("")
+  const [requestingNewTime, setRequestingNewTime] = useState(false)
   const [transcriptOptIn, setTranscriptOptIn] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -115,6 +117,9 @@ export default function PayPage() {
     if (!stripe || !cardElement || !setupClientSecret) return
     if (!name.trim()) { setError("Please enter your name"); return }
     if (!email.trim()) { setError("Please enter your email"); return }
+    // Require a date — either pre-set by host or chosen/changed by client
+    const finalDate = clientDate || booking?.scheduled_at
+    if (!finalDate) { setError("Please select a date and time for the session"); return }
     if (!agreedToTerms) { setError("Please agree to the terms"); return }
 
     setSubmitting(true)
@@ -137,6 +142,8 @@ export default function PayPage() {
           clientEmail: email,
           transcriptOptedIn: transcriptOptIn,
           paymentMethodId: setupIntent.payment_method,
+          scheduledAt: finalDate,
+          originalScheduledAt: booking?.scheduled_at,
         }),
       })
       const data = await res.json()
@@ -240,11 +247,48 @@ export default function PayPage() {
         {/* Booking details */}
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 space-y-3">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Session details</h2>
-          <div className="bg-purple-900/10 border border-purple-500/20 rounded-xl px-4 py-3 mb-1">
-            <p className="text-xs text-purple-400 font-medium uppercase tracking-wider mb-0.5">Date & Time</p>
-            <p className="text-white font-bold text-base">{format(new Date(booking.scheduled_at), "EEEE, MMMM d, yyyy")}</p>
-            <p className="text-purple-300 font-semibold text-sm">{format(new Date(booking.scheduled_at), "h:mm a")}</p>
-          </div>
+
+          {/* Date & time — host pre-set or client picks */}
+          {booking.scheduled_at && !requestingNewTime ? (
+            <div className="bg-purple-900/10 border border-purple-500/20 rounded-xl px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs text-purple-400 font-medium uppercase tracking-wider mb-0.5">Date & Time</p>
+                  <p className="text-white font-bold text-base">{format(new Date(booking.scheduled_at), "EEEE, MMMM d, yyyy")}</p>
+                  <p className="text-purple-300 font-semibold text-sm">{format(new Date(booking.scheduled_at), "h:mm a")}</p>
+                </div>
+                <button
+                  onClick={() => { setRequestingNewTime(true); setClientDate("") }}
+                  className="text-xs text-gray-500 hover:text-purple-400 underline transition-colors mt-1 flex-shrink-0"
+                >
+                  Request different time
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-purple-400 font-medium uppercase tracking-wider">
+                  {booking.scheduled_at ? "Request a different date & time" : "Choose a date & time"} <span className="text-red-400">*</span>
+                </label>
+                {booking.scheduled_at && (
+                  <button onClick={() => { setRequestingNewTime(false); setClientDate("") }} className="text-xs text-gray-500 hover:text-white underline">
+                    Keep original
+                  </button>
+                )}
+              </div>
+              <input
+                type="datetime-local"
+                value={clientDate}
+                onChange={(e) => setClientDate(e.target.value)}
+                className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+              />
+              {booking.scheduled_at && (
+                <p className="text-xs text-amber-400">⚠ The consultant will be notified of your requested time change.</p>
+              )}
+            </div>
+          )}
+
           <Row label="Service" value={booking.service_type} />
           <Row label="Rate" value={priceLabel} highlight />
           {booking.notes && (

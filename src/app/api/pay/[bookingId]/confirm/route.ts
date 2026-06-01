@@ -13,10 +13,14 @@ export async function POST(
   const { bookingId } = await params
   try {
     const body = await req.json()
-    const { clientName, clientEmail, transcriptOptedIn, paymentMethodId } = body
+    const { clientName, clientEmail, transcriptOptedIn, paymentMethodId, scheduledAt, originalScheduledAt } = body
 
     if (!clientName || !clientEmail) throw new Error("Name and email are required")
     if (!paymentMethodId) throw new Error("Missing payment method")
+    if (!scheduledAt) throw new Error("Please select a date and time")
+
+    // Detect if client proposed a different time than what host originally set
+    const timeChanged = originalScheduledAt && scheduledAt !== originalScheduledAt
 
     const admin = await createAdminClient()
 
@@ -151,6 +155,7 @@ export async function POST(
       stripe_payment_method_id: paymentMethodId,
       daily_room_url: dailyRoomUrl,
       daily_room_name: dailyRoomName,
+      scheduled_at: scheduledAt,
       status: "confirmed",
     }).eq("id", bookingId)
 
@@ -159,7 +164,7 @@ export async function POST(
         clientName,
         clientEmail,
         serviceType: booking.service_type,
-        scheduledAt: booking.scheduled_at,
+        scheduledAt,
         pricingModel: booking.pricing_model as "flat" | "per_minute",
         rate: booking.rate,
         transcriptOptedIn,
@@ -170,7 +175,8 @@ export async function POST(
         clientName,
         clientEmail,
         serviceType: booking.service_type,
-        scheduledAt: booking.scheduled_at,
+        scheduledAt,
+        originalScheduledAt: timeChanged ? originalScheduledAt : undefined,
         pricingModel: booking.pricing_model as "flat" | "per_minute",
         rate: booking.rate,
         transcriptOptedIn,

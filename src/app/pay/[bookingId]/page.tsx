@@ -240,7 +240,11 @@ export default function PayPage() {
         {/* Booking details */}
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 space-y-3">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Session details</h2>
-          <Row label="Date & Time" value={format(new Date(booking.scheduled_at), "EEEE, MMMM d · h:mm a")} />
+          <div className="bg-purple-900/10 border border-purple-500/20 rounded-xl px-4 py-3 mb-1">
+            <p className="text-xs text-purple-400 font-medium uppercase tracking-wider mb-0.5">Date & Time</p>
+            <p className="text-white font-bold text-base">{format(new Date(booking.scheduled_at), "EEEE, MMMM d, yyyy")}</p>
+            <p className="text-purple-300 font-semibold text-sm">{format(new Date(booking.scheduled_at), "h:mm a")}</p>
+          </div>
           <Row label="Service" value={booking.service_type} />
           <Row label="Rate" value={priceLabel} highlight />
           {booking.notes && (

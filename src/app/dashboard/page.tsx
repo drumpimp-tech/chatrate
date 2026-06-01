@@ -80,10 +80,21 @@ export default function DashboardPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setInviteLink(data.inviteUrl)
-      // Add the new booking to state
+      const fullUrl = `${APP_URL}${data.inviteUrl}`
+      setInviteLink(fullUrl)
+      // Auto-copy to clipboard immediately
+      navigator.clipboard.writeText(fullUrl).catch(() => {})
+      setInviteCopied(true)
+      setTimeout(() => setInviteCopied(false), 3000)
+      // Refresh bookings and scroll upcoming into view
       const newBooking = await fetch("/api/bookings").then((r) => r.json())
-      if (Array.isArray(newBooking)) setBookings(newBooking)
+      if (Array.isArray(newBooking)) {
+        setBookings(newBooking)
+        setActiveTab("upcoming")
+        setTimeout(() => {
+          document.getElementById("upcoming-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
+        }, 200)
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -94,7 +105,7 @@ export default function DashboardPage() {
   const copyInviteLink = (url: string) => {
     navigator.clipboard.writeText(url)
     setInviteCopied(true)
-    setTimeout(() => setInviteCopied(false), 2000)
+    setTimeout(() => setInviteCopied(false), 3000)
   }
 
   const upcoming = bookings.filter((b) =>
@@ -350,19 +361,21 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm text-green-400 font-medium">✓ Invite created — send this link to your client:</p>
+                  <p className="text-sm text-green-400 font-semibold">✓ Invite created — link copied to clipboard!</p>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 font-mono text-purple-400 text-xs truncate">
+                    <div className="flex-1 bg-white/[0.04] border border-purple-500/30 rounded-xl px-3 py-2.5 font-mono text-purple-400 text-xs truncate">
                       {inviteLink}
                     </div>
                     <button
                       onClick={() => copyInviteLink(inviteLink)}
-                      className="flex-shrink-0 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-all"
+                      className={`flex-shrink-0 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-all ${
+                        inviteCopied ? "bg-green-600 hover:bg-green-500" : "bg-purple-600 hover:bg-purple-500"
+                      }`}
                     >
-                      {inviteCopied ? "Copied!" : "Copy"}
+                      {inviteCopied ? "✓ Copied!" : "Copy"}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-600">Your client opens this link, adds their card, and confirms. You&apos;ll get an email when they do.</p>
+                  <p className="text-xs text-gray-500">Your client opens this link, adds their card, and confirms. You&apos;ll get an email when they do.</p>
                   <button
                     onClick={() => { setInviteLink(""); setInviteForm({ clientName: "", clientEmail: "", scheduledAt: "", notes: "", isGroup: false, maxSeats: "5" }) }}
                     className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
@@ -386,7 +399,7 @@ export default function DashboardPage() {
         </div>
 
         {activeTab === "upcoming" && (
-          <div className="space-y-3">
+          <div id="upcoming-section" className="space-y-3">
             {upcoming.length === 0 ? (
               <Empty message="No upcoming bookings. Share your booking link to get started." />
             ) : (

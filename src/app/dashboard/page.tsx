@@ -87,22 +87,23 @@ export default function DashboardPage() {
       if (!res.ok) throw new Error(data.error)
       // inviteUrl from API is already a full URL
       const fullUrl = data.inviteUrl
-      setInviteLink(fullUrl)
       // Auto-copy to clipboard immediately
       navigator.clipboard.writeText(fullUrl).catch(() => {})
-      setInviteCopied(true)
-      setTimeout(() => setInviteCopied(false), 3000)
       // Show toast
-      setToast("🔗 Link copied to clipboard!")
-      setTimeout(() => setToast(""), 3500)
-      // Refresh bookings and scroll upcoming into view
-      const newBooking = await fetch("/api/bookings").then((r) => r.json())
-      if (Array.isArray(newBooking)) {
-        setBookings(newBooking)
+      setToast("🔗 Invite link copied to clipboard!")
+      setTimeout(() => setToast(""), 4000)
+      // Close the invite panel and reset form
+      setShowInvite(false)
+      setInviteLink("")
+      setInviteForm({ clientName: "", clientEmail: "", scheduledAt: "", notes: "", isGroup: false, maxSeats: "4" })
+      // Refresh bookings, switch to upcoming, scroll into view
+      const newBookings = await fetch("/api/bookings").then((r) => r.json())
+      if (Array.isArray(newBookings)) {
+        setBookings(newBookings)
         setActiveTab("upcoming")
         setTimeout(() => {
           document.getElementById("upcoming-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
-        }, 200)
+        }, 150)
       }
     } catch (e) {
       console.error(e)

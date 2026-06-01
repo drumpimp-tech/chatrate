@@ -3,9 +3,12 @@ import "./globals.css"
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chatrate-app.com"),
-  title: "ChatRate — Expert Consultations, On Your Terms",
+  title: {
+    default: "ChatRate — Get Paid for Every Call. No Platform Cut.",
+    template: "%s — ChatRate",
+  },
   description:
-    "Book a one-on-one call with an expert. Pay per minute or flat rate. Transcripts available.",
+    "ChatRate gives you a personal booking page where clients pay to talk to you. Per-minute or flat rate. $4.99 one-time, no monthly fees, no platform cut. Direct to your Stripe.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
@@ -16,19 +19,53 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
   },
   openGraph: {
-    title: "ChatRate — Expert Consultations, On Your Terms",
+    title: "ChatRate — Get Paid for Every Call. No Platform Cut.",
     description:
-      "Book a one-on-one call with an expert. Pay per minute or flat rate.",
+      "Your expert booking page, live in 10 minutes. Per-minute or flat rate. $4.99 one-time, no platform cut.",
     url: "https://chatrate-app.com",
     siteName: "ChatRate",
-    images: [{ url: "/icon.png", width: 1254, height: 1254, alt: "ChatRate" }],
+    images: [{ url: "/icon.png", width: 1254, height: 1254, alt: "ChatRate — Get paid for every call" }],
     type: "website",
   },
   twitter: {
-    card: "summary",
-    title: "ChatRate",
-    description: "Book & pay for expert calls. Per-minute or flat rate.",
+    card: "summary_large_image",
+    title: "ChatRate — Get Paid for Every Call. No Platform Cut.",
+    description: "Your expert booking page, live in 10 minutes. $4.99 one-time, no platform cut.",
     images: ["/icon.png"],
+  },
+}
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "ChatRate",
+  url: "https://chatrate-app.com",
+  logo: "https://chatrate-app.com/icon.png",
+  description:
+    "ChatRate gives experts a personal booking page where clients pay to talk to you. Set your rate, share your link, get paid via Stripe. Per-minute or flat rate. One-time $4.99, no monthly fees.",
+}
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "ChatRate",
+  url: "https://chatrate-app.com",
+}
+
+const softwareSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "ChatRate",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: "https://chatrate-app.com",
+  description:
+    "Expert booking platform for paid video calls. Pay-per-minute or flat rate. No platform cut. Direct Stripe payouts. $4.99 one-time activation.",
+  offers: {
+    "@type": "Offer",
+    price: "4.99",
+    priceCurrency: "USD",
+    description: "One-time activation fee. No monthly fees. No revenue share.",
   },
 }
 
@@ -39,6 +76,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+        />
+      </head>
       <body className="min-h-screen bg-[#050505] text-white antialiased">
         {children}
       </body>

@@ -1,5 +1,106 @@
+import type { Metadata } from "next"
 import { Logo } from "@/components/Logo"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "How to Set Up Your Expert Booking Page",
+  description:
+    "Step-by-step guide to getting your ChatRate expert consultation page live in under 10 minutes. Connect Stripe, set your rates, and start charging for calls.",
+  openGraph: {
+    title: "How to Set Up Your Expert Booking Page — ChatRate Guide",
+    description:
+      "Connect Stripe, set your rates, go live in 10 minutes. ChatRate setup guide.",
+    url: "https://chatrate-app.com/guide",
+    type: "article",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "How to Set Up Your Expert Booking Page — ChatRate Guide",
+    description: "Connect Stripe, set your rates, go live in 10 minutes.",
+  },
+  alternates: {
+    canonical: "https://chatrate-app.com/guide",
+  },
+}
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "When do I get paid?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Stripe charges the client the moment the call ends. Funds appear in your Stripe balance instantly and are paid out on your normal Stripe payout schedule (usually 2 business days for US accounts).",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What happens if a client doesn't show up?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "If you join and the client doesn't, you can end the call after a few minutes. For per-minute pricing, the client is charged for those minutes. For flat rate, the full amount is charged.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I change my rate after going live?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes — update your rate any time from the Settings page in your dashboard. New bookings will use the updated rate. Existing confirmed bookings keep the rate that was set at booking time.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I use test Stripe keys first?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Use pk_test_ and sk_test_ keys from your Stripe dashboard to run the full booking flow with no real money. Switch to live keys from your dashboard Settings when ready.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is my Stripe secret key safe?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Your secret key is encrypted at rest in our database, is never included in API responses, and is only used server-side to initiate charges on your behalf. It never leaves our server.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What if I want to refund a client?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Log in to your Stripe dashboard and issue a refund from the Payments section. Stripe will return the funds to the client's card.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Do calls require any browser plugins?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "No. Daily.co runs entirely in the browser using WebRTC. Chrome, Firefox, Safari, and Edge all work. Mobile browsers work too.",
+      },
+    },
+  ],
+}
+
+const howToSchema = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: "How to Set Up a Paid Expert Booking Page with ChatRate",
+  description:
+    "Get your ChatRate expert booking page live in under 10 minutes. Connect Stripe, set your rates, and start charging clients for calls.",
+  totalTime: "PT10M",
+  estimatedCost: { "@type": "MonetaryAmount", currency: "USD", value: "4.99" },
+  step: [
+    { "@type": "HowToStep", position: 1, name: "Sign up free", text: "Create your ChatRate account in 60 seconds." },
+    { "@type": "HowToStep", position: 2, name: "Set your rates", text: "Choose flat rate or per-minute billing and set your price." },
+    { "@type": "HowToStep", position: 3, name: "Paste your Stripe keys", text: "Connect your Stripe account by entering your API keys. Payments go straight to your Stripe." },
+    { "@type": "HowToStep", position: 4, name: "Pay once and go live", text: "Pay the one-time $4.99 activation fee to make your booking page public." },
+  ],
+}
 
 const Section = ({ id, children }: { id: string; children: React.ReactNode }) => (
   <section id={id} className="scroll-mt-20">{children}</section>
@@ -48,6 +149,8 @@ const Callout = ({ icon, color, children }: { icon: string; color: string; child
 export default function GuidePage() {
   return (
     <div className="min-h-screen bg-[#050505] text-white">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }} />
       {/* Nav */}
       <nav className="border-b border-white/5 px-6 py-4 sticky top-0 z-50 bg-[#050505]/90 backdrop-blur">
         <div className="max-w-5xl mx-auto flex items-center justify-between">

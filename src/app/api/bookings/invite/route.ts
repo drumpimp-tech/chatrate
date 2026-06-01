@@ -54,8 +54,10 @@ export async function POST(req: Request) {
       maxSeats: seats,
     })
   } catch (e: unknown) {
-    console.error(e)
-    const msg = e instanceof Error ? e.message : "Failed to create invite"
+    console.error("Invite error:", JSON.stringify(e))
+    const msg = e instanceof Error
+      ? e.message
+      : (e as { message?: string })?.message || JSON.stringify(e) || "Failed to create invite"
     return Response.json({ error: msg }, { status: 500 })
   }
 }

@@ -33,6 +33,9 @@ export const metadata: Metadata = {
     description: "Your expert booking page, live in 10 minutes. $4.99 one-time, no platform cut.",
     images: ["/icon.png"],
   },
+  verification: {
+    google: "w-AaLzIMx32tGV-aOy9lseAANo9mCeQyudqe0mYaKzI",
+  },
 }
 
 const organizationSchema = {

@@ -67,7 +67,7 @@ export default function HomePage() {
           </Link>
         </div>
         <p className="text-gray-600 text-sm mt-4">
-          $4.99 one-time · No monthly fees · Cancel anytime
+          $4.99 one-time · No monthly fees
         </p>
       </section>
 

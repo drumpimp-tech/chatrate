@@ -12,8 +12,8 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://chatrate-app.com"
 
 type Booking = {
   id: string
-  client_name: string
-  client_email: string
+  client_name: string | null
+  client_email: string | null
   service_type: string
   pricing_model: "flat" | "per_minute"
   rate: number
@@ -84,28 +84,46 @@ export default function DashboardPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      // inviteUrl from API is already a full URL
+
       const fullUrl = data.inviteUrl
-      // Auto-copy to clipboard immediately
       navigator.clipboard.writeText(fullUrl).catch(() => {})
-      // Show toast
       setToast("🔗 Invite link copied to clipboard!")
       setTimeout(() => setToast(""), 4000)
-      // Close the invite panel and reset form
+
+      // Add booking directly to state immediately — no re-fetch needed
+      const newBooking: Booking = {
+        id: data.id,
+        client_name: inviteForm.clientName || null,
+        client_email: inviteForm.clientEmail || null,
+        service_type: host?.service_type || "",
+        pricing_model: host?.rate_type || "flat",
+        rate: host?.rate || 0,
+        transcript_opted_in: false,
+        transcript_fee: 0,
+        status: "invited",
+        scheduled_at: inviteForm.scheduledAt || null,
+        started_at: null,
+        ended_at: null,
+        duration_seconds: null,
+        amount_charged: null,
+        daily_room_url: "",
+        daily_room_name: "",
+      }
+      setBookings((prev) => [newBooking, ...prev])
+      setActiveTab("upcoming")
+
+      // Close panel and reset form
       setShowInvite(false)
       setInviteLink("")
       setInviteForm({ clientName: "", clientEmail: "", scheduledAt: "", notes: "", isGroup: false, maxSeats: "4" })
-      // Refresh bookings, switch to upcoming, scroll into view
-      const newBookings = await fetch("/api/bookings").then((r) => r.json())
-      if (Array.isArray(newBookings)) {
-        setBookings(newBookings)
-        setActiveTab("upcoming")
-        setTimeout(() => {
-          document.getElementById("upcoming-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
-        }, 150)
-      }
-    } catch (e) {
-      console.error(e)
+
+      // Scroll upcoming into view
+      setTimeout(() => {
+        document.getElementById("upcoming-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 100)
+    } catch (e: unknown) {
+      setToast("❌ " + (e instanceof Error ? e.message : "Failed to create invite"))
+      setTimeout(() => setToast(""), 4000)
     } finally {
       setInviteCreating(false)
     }

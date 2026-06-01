@@ -41,6 +41,7 @@ function CallRoomContent() {
   const dailyRef = useRef<any>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startedAtRef = useRef<string | null>(null)
+  const transcriptRef = useRef<string>("")
 
   // Load booking data
   useEffect(() => {
@@ -108,6 +109,21 @@ function CallRoomContent() {
         timerRef.current = setInterval(() => {
           setElapsedSeconds((s) => s + 1)
         }, 1000)
+        // Start Deepgram transcription (owner only) when the client paid for it.
+        if (isHost && booking.transcript_opted_in) {
+          try {
+            await frame.startTranscription()
+          } catch (err) {
+            console.error("startTranscription failed:", err)
+          }
+        }
+      })
+
+      // Accumulate live transcript text so we can store + email it after the call.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      frame.on("transcription-message", (ev: any) => {
+        const line = (ev?.text || ev?.transcript || "").trim()
+        if (line) transcriptRef.current += (transcriptRef.current ? "\n" : "") + line
       })
 
       frame.on("left-meeting", () => {
@@ -152,6 +168,7 @@ function CallRoomContent() {
         status: "completed",
         ended_at: endedAt,
         started_at: startedAt,
+        transcriptText: transcriptRef.current || undefined,
       }),
     })
 

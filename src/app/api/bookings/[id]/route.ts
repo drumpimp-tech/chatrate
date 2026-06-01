@@ -51,6 +51,7 @@ export async function PATCH(
 
       const hostStripeKey = booking.hosts?.stripe_secret_key
       let totalCharged = 0
+      let transcriptText: string | null = null
 
       // Show the consultant's name on the client's card statement. Cards only
       // accept statement_descriptor_SUFFIX (the complete statement_descriptor
@@ -164,10 +165,14 @@ export async function PATCH(
         // Only report a charge in the receipt/record if it actually went through.
         totalCharged = chargeSucceeded ? amountCharged : 0
 
-        // Fetch transcript if opted in
-        let transcriptText: string | null = null
-        if (booking.transcript_opted_in && booking.daily_room_name) {
-          transcriptText = await getDailyRoomTranscript(booking.daily_room_name)
+        // Transcript: prefer the live-captured text from the call; fall back to
+        // Daily's stored transcript. Only when the client paid for it.
+        if (booking.transcript_opted_in) {
+          transcriptText =
+            (typeof body.transcriptText === "string" && body.transcriptText.trim()
+              ? body.transcriptText.trim()
+              : null) ||
+            (booking.daily_room_name ? await getDailyRoomTranscript(booking.daily_room_name) : null)
         }
 
         await sendPostCallReceipt({
@@ -190,6 +195,7 @@ export async function PATCH(
           started_at: booking.started_at || body.started_at,
           duration_seconds: durationSeconds,
           amount_charged: totalCharged,
+          transcript_text: transcriptText,
         })
         .eq("id", id)
         .select()

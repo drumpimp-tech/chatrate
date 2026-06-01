@@ -74,6 +74,42 @@ export default function DashboardPage() {
   const [inviteCopied, setInviteCopied] = useState(false)
   const [toast, setToast] = useState("")
 
+  // Inline price editor state
+  const [editingRate, setEditingRate] = useState(false)
+  const [rateForm, setRateForm] = useState({ rate_type: "flat" as "flat" | "per_minute", rate: "", transcript_fee: "" })
+  const [rateSaving, setRateSaving] = useState(false)
+
+  const openRateEditor = () => {
+    if (!host) return
+    setRateForm({ rate_type: host.rate_type, rate: String(host.rate), transcript_fee: String(host.transcript_fee ?? 0) })
+    setEditingRate(true)
+  }
+
+  const saveRate = async () => {
+    setRateSaving(true)
+    try {
+      const res = await fetch("/api/me/pricing", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rate_type: rateForm.rate_type,
+          rate: parseFloat(rateForm.rate) || 0,
+          transcript_fee: parseFloat(rateForm.transcript_fee) || 0,
+        }),
+      })
+      const updated = await res.json()
+      if (!res.ok) throw new Error(updated.error || "Update failed")
+      if (updated?.username) setHost(updated)
+      setEditingRate(false)
+      setToast("✓ Pricing updated")
+    } catch (e: unknown) {
+      setToast("❌ " + (e instanceof Error ? e.message : "Failed to update pricing"))
+    } finally {
+      setRateSaving(false)
+      setTimeout(() => setToast(""), 3500)
+    }
+  }
+
   useEffect(() => {
     Promise.all([
       fetch("/api/bookings").then((r) => r.json()),
@@ -292,16 +328,72 @@ export default function DashboardPage() {
           <StatCard label="Total Earnings" value={formatCurrency(totalEarnings)} icon="💰" highlight />
           <StatCard label="Completed Calls" value={past.length.toString()} icon="✅" />
           <StatCard label="Upcoming" value={upcoming.length.toString()} icon="📅" />
-          <StatCard
-            label="Current Rate"
-            value={
-              host.rate_type === "flat"
-                ? `${formatCurrency(host.rate)} flat`
-                : `${formatCurrency(host.rate)}/min`
-            }
-            icon="⚡"
-          />
+          <button onClick={openRateEditor} className="text-left focus:outline-none" title="Edit pricing">
+            <StatCard
+              label="Current Rate · tap to edit"
+              value={
+                host.rate_type === "flat"
+                  ? `${formatCurrency(host.rate)} flat`
+                  : `${formatCurrency(host.rate)}/min`
+              }
+              icon="💲"
+            />
+          </button>
         </div>
+
+        {/* Inline price editor */}
+        {editingRate && (
+          <div className="bg-white/[0.03] border border-purple-500/20 rounded-2xl p-5 mb-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold">Edit pricing</p>
+              <button onClick={() => setEditingRate(false)} className="text-gray-500 hover:text-white text-sm">✕</button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {(["flat", "per_minute"] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setRateForm((f) => ({ ...f, rate_type: type }))}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                    rateForm.rate_type === type
+                      ? "bg-purple-600 border-purple-500 text-white"
+                      : "bg-white/[0.04] border-white/10 text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {type === "flat" ? "Flat per call" : "Per minute"}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">
+                  {rateForm.rate_type === "flat" ? "Price per call (USD)" : "Price per minute (USD)"}
+                </label>
+                <input
+                  type="number" min="0" step="0.01" inputMode="decimal"
+                  value={rateForm.rate}
+                  onChange={(e) => setRateForm((f) => ({ ...f, rate: e.target.value }))}
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Transcript add-on (USD)</label>
+                <input
+                  type="number" min="0" step="0.01" inputMode="decimal"
+                  value={rateForm.transcript_fee}
+                  onChange={(e) => setRateForm((f) => ({ ...f, transcript_fee: e.target.value }))}
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500"
+                />
+              </div>
+            </div>
+            <button
+              onClick={saveRate}
+              disabled={rateSaving}
+              className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all"
+            >
+              {rateSaving ? "Saving..." : "Save pricing"}
+            </button>
+          </div>
+        )}
 
         {/* Availability toggle */}
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 mb-6 flex items-center justify-between">

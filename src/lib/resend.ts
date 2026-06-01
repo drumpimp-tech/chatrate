@@ -1,5 +1,6 @@
 import { Resend } from "resend"
 import { formatCurrency } from "./utils"
+import { generateTranscriptPdf } from "./pdf"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const HOST_EMAIL = process.env.HOST_EMAIL!
@@ -207,12 +208,33 @@ export async function sendPostCallReceipt({
     row("Duration", `${minutes} min`) +
     row("Total charged", formatCurrency(amountCharged), { highlight: true })
 
-  const transcriptBlock = transcriptText
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;"><tr><td style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:20px;">
-         <p style="margin:0 0 10px;color:#7c3aed;font-weight:700;font-size:14px;">Call transcript</p>
-         <p style="margin:0;color:#374151;white-space:pre-wrap;font-size:14px;line-height:1.6;">${transcriptText}</p>
-       </td></tr></table>`
-    : ""
+  // If a transcript exists, attach it as a clean PDF rather than inlining it.
+  const attachments: { filename: string; content: string }[] = []
+  let transcriptNote = ""
+  if (transcriptText) {
+    try {
+      const pdfBase64 = await generateTranscriptPdf({
+        transcriptText,
+        consultantName: consultant,
+        clientName,
+        serviceType,
+        durationMinutes: minutes,
+        dateStr,
+      })
+      const safeName = consultant.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "")
+      attachments.push({ filename: `ChatRate-Transcript-${safeName}.pdf`, content: pdfBase64 })
+      transcriptNote = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;"><tr><td style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:16px 20px;">
+        <p style="margin:0;color:#7c3aed;font-weight:700;font-size:14px;">📄 Your full call transcript is attached as a PDF.</p>
+      </td></tr></table>`
+    } catch (err) {
+      // PDF generation must never block the receipt — fall back to inline text.
+      console.error("Transcript PDF generation failed:", err)
+      transcriptNote = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;"><tr><td style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:20px;">
+        <p style="margin:0 0 10px;color:#7c3aed;font-weight:700;font-size:14px;">Call transcript</p>
+        <p style="margin:0;color:#374151;white-space:pre-wrap;font-size:14px;line-height:1.6;">${transcriptText}</p>
+      </td></tr></table>`
+    }
+  }
 
   await resend.emails.send({
     from: FROM,
@@ -223,8 +245,9 @@ export async function sendPostCallReceipt({
       eyebrow: "Payment receipt",
       heading: `Thanks, ${clientName} — call complete`,
       rowsHtml,
-      extraHtml: transcriptBlock,
+      extraHtml: transcriptNote,
       footnote: `This charge appears on your statement under ${consultant}. Questions? Just reply to this email.`,
     }),
+    ...(attachments.length ? { attachments } : {}),
   })
 }

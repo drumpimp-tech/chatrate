@@ -57,6 +57,7 @@ export default function DashboardPage() {
   const [inviteCreating, setInviteCreating] = useState(false)
   const [inviteLink, setInviteLink] = useState("")
   const [inviteCopied, setInviteCopied] = useState(false)
+  const [toast, setToast] = useState("")
 
   useEffect(() => {
     Promise.all([
@@ -80,12 +81,16 @@ export default function DashboardPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      const fullUrl = `${APP_URL}${data.inviteUrl}`
+      // inviteUrl from API is already a full URL
+      const fullUrl = data.inviteUrl
       setInviteLink(fullUrl)
       // Auto-copy to clipboard immediately
       navigator.clipboard.writeText(fullUrl).catch(() => {})
       setInviteCopied(true)
       setTimeout(() => setInviteCopied(false), 3000)
+      // Show toast
+      setToast("🔗 Link copied to clipboard!")
+      setTimeout(() => setToast(""), 3500)
       // Refresh bookings and scroll upcoming into view
       const newBooking = await fetch("/api/bookings").then((r) => r.json())
       if (Array.isArray(newBooking)) {
@@ -106,6 +111,8 @@ export default function DashboardPage() {
     navigator.clipboard.writeText(url)
     setInviteCopied(true)
     setTimeout(() => setInviteCopied(false), 3000)
+    setToast("🔗 Link copied to clipboard!")
+    setTimeout(() => setToast(""), 3500)
   }
 
   const upcoming = bookings.filter((b) =>
@@ -163,6 +170,12 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#050505]">
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-xl animate-bounce-in">
+          {toast}
+        </div>
+      )}
       {/* Top nav */}
       <nav className="border-b border-white/5 px-6 py-4 flex items-center justify-between">
         <Logo />
@@ -413,7 +426,13 @@ export default function DashboardPage() {
             {past.length === 0 ? (
               <Empty message="No completed calls yet." />
             ) : (
-              past.map((b) => <PastCard key={b.id} booking={b} />)
+              past.map((b) => (
+                <PastCard
+                  key={b.id}
+                  booking={b}
+                  onClear={(id) => setBookings((prev) => prev.filter((x) => x.id !== id))}
+                />
+              ))
             )}
           </div>
         )}
@@ -517,7 +536,23 @@ function UpcomingCard({ booking }: { booking: Booking }) {
   )
 }
 
-function PastCard({ booking }: { booking: Booking }) {
+function PastCard({ booking, onClear }: { booking: Booking; onClear: (id: string) => void }) {
+  const [clearing, setClearing] = useState(false)
+
+  const handleClear = async () => {
+    setClearing(true)
+    try {
+      await fetch(`/api/bookings/${booking.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hidden: true }),
+      })
+      onClear(booking.id)
+    } catch {
+      setClearing(false)
+    }
+  }
+
   return (
     <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 flex items-center justify-between gap-4">
       <div>
@@ -527,14 +562,23 @@ function PastCard({ booking }: { booking: Booking }) {
           <p className="text-gray-600 text-xs mt-0.5">{formatDuration(booking.duration_seconds)}</p>
         )}
       </div>
-      <div className="text-right">
-        <p className="text-purple-400 font-bold text-lg">
-          {booking.amount_charged ? formatCurrency(booking.amount_charged) : "—"}
-        </p>
-        <p className="text-gray-600 text-xs">{format(new Date(booking.scheduled_at), "MMM d, yyyy")}</p>
-        {booking.transcript_opted_in && (
-          <p className="text-xs text-green-500 mt-0.5">Transcript sent ✓</p>
-        )}
+      <div className="flex items-center gap-4">
+        <div className="text-right">
+          <p className="text-purple-400 font-bold text-lg">
+            {booking.amount_charged ? formatCurrency(booking.amount_charged) : "—"}
+          </p>
+          <p className="text-gray-600 text-xs">{format(new Date(booking.scheduled_at), "MMM d, yyyy")}</p>
+          {booking.transcript_opted_in && (
+            <p className="text-xs text-green-500 mt-0.5">Transcript sent ✓</p>
+          )}
+        </div>
+        <button
+          onClick={handleClear}
+          disabled={clearing}
+          className="text-gray-600 hover:text-red-400 transition-colors text-xs border border-white/10 hover:border-red-500/30 px-3 py-1.5 rounded-lg disabled:opacity-40"
+        >
+          {clearing ? "..." : "Clear"}
+        </button>
       </div>
     </div>
   )

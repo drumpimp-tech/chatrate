@@ -39,6 +39,8 @@ export default function PayPage() {
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [nameLockedByHost, setNameLockedByHost] = useState(false)
+  const [emailLockedByHost, setEmailLockedByHost] = useState(false)
   const [clientDate, setClientDate] = useState("")
   const [requestingNewTime, setRequestingNewTime] = useState(false)
   const [transcriptOptIn, setTranscriptOptIn] = useState(false)
@@ -57,8 +59,8 @@ export default function PayPage() {
       .then((data) => {
         if (data.error) { setError(data.error); setLoading(false); return }
         setBooking(data)
-        if (data.client_name) setName(data.client_name)
-        if (data.client_email) setEmail(data.client_email)
+        if (data.client_name) { setName(data.client_name); setNameLockedByHost(true) }
+        if (data.client_email) { setEmail(data.client_email); setEmailLockedByHost(true) }
         setLoading(false)
       })
       .catch(() => { setError("Failed to load invite"); setLoading(false) })
@@ -149,7 +151,9 @@ export default function PayPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Payment failed")
 
-      router.push(`/pay/${bookingId}/confirmed`)
+      // Pass room URL to confirmed page so client can join directly
+      const roomParam = data.roomUrl ? `?room=${encodeURIComponent(data.roomUrl)}` : ""
+      router.push(`/pay/${bookingId}/confirmed${roomParam}`)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong")
     } finally {
@@ -325,23 +329,39 @@ export default function PayPage() {
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 space-y-4">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Your details</h2>
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Your name</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm text-gray-400">Your name</label>
+              {nameLockedByHost && <span className="text-xs text-purple-400">Pre-filled by host</span>}
+            </div>
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => !nameLockedByHost && setName(e.target.value)}
+              readOnly={nameLockedByHost}
               placeholder="Jane Smith"
-              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500"
+              className={`w-full border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none transition-all ${
+                nameLockedByHost
+                  ? "bg-white/[0.02] border-white/5 text-gray-300 cursor-default"
+                  : "bg-white/[0.04] border-white/10 focus:border-purple-500"
+              }`}
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Your email</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm text-gray-400">Your email</label>
+              {emailLockedByHost && <span className="text-xs text-purple-400">Pre-filled by host</span>}
+            </div>
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => !emailLockedByHost && setEmail(e.target.value)}
+              readOnly={emailLockedByHost}
               placeholder="you@email.com"
-              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500"
+              className={`w-full border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none transition-all ${
+                emailLockedByHost
+                  ? "bg-white/[0.02] border-white/5 text-gray-300 cursor-default"
+                  : "bg-white/[0.04] border-white/10 focus:border-purple-500"
+              }`}
             />
           </div>
         </div>

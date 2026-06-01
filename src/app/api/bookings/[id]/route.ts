@@ -115,6 +115,7 @@ export async function PATCH(
                   durationSeconds,
                   amountCharged: amount,
                   transcriptText: null,
+                  consultantName: booking.hosts?.display_name,
                 }).catch(console.error)
               } catch (chargeErr) {
                 console.error(`Failed to charge participant ${p.id}:`, chargeErr)
@@ -176,6 +177,7 @@ export async function PATCH(
           durationSeconds,
           amountCharged: totalCharged,
           transcriptText,
+          consultantName: booking.hosts?.display_name,
         }).catch(console.error)
       }
 

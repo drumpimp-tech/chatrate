@@ -5,6 +5,66 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 const HOST_EMAIL = process.env.HOST_EMAIL!
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL!
 
+const FROM = "ChatRate <noreply@chatrate-app.com>"
+
+// ── Shared, email-client-safe building blocks ────────────────────────────────
+const FONT =
+  "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+
+function row(label: string, value: string, opts: { highlight?: boolean; accent?: string } = {}) {
+  const valColor = opts.accent || (opts.highlight ? "#7c3aed" : "#111827")
+  const valSize = opts.highlight ? "18px" : "15px"
+  return `
+    <tr>
+      <td style="padding:12px 0;border-bottom:1px solid #f0f0f3;color:#6b7280;font-size:14px;">${label}</td>
+      <td style="padding:12px 0;border-bottom:1px solid #f0f0f3;color:${valColor};font-size:${valSize};font-weight:700;text-align:right;">${value}</td>
+    </tr>`
+}
+
+function shell(opts: {
+  preheader: string
+  eyebrow: string
+  heading: string
+  rowsHtml: string
+  ctaLabel?: string
+  ctaUrl?: string
+  footnote?: string
+  extraHtml?: string
+}) {
+  return `
+  <div style="background:#f4f4f7;margin:0;padding:24px 0;font-family:${FONT};">
+    <span style="display:none;max-height:0;overflow:hidden;opacity:0;">${opts.preheader}</span>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;">
+      <tr><td style="padding:0 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+          <tr><td style="background:#0a0a0a;padding:22px 32px;">
+            <span style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">Chat<span style="color:#a855f7;">Rate</span></span>
+          </td></tr>
+          <tr><td style="padding:32px;">
+            <p style="margin:0 0 6px;color:#a855f7;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${opts.eyebrow}</p>
+            <h1 style="margin:0 0 24px;color:#111827;font-size:24px;line-height:1.25;font-weight:800;">${opts.heading}</h1>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${opts.rowsHtml}</table>
+            ${opts.extraHtml || ""}
+            ${
+              opts.ctaLabel && opts.ctaUrl
+                ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0 0;"><tr><td style="border-radius:10px;background:#7c3aed;">
+                     <a href="${opts.ctaUrl}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;">${opts.ctaLabel}</a>
+                   </td></tr></table>`
+                : ""
+            }
+            ${
+              opts.footnote
+                ? `<p style="margin:28px 0 0;color:#9ca3af;font-size:13px;line-height:1.6;">${opts.footnote}</p>`
+                : ""
+            }
+          </td></tr>
+        </table>
+        <p style="text-align:center;color:#9ca3af;font-size:12px;margin:18px 0 0;">ChatRate · Expert consultations, paid by the call</p>
+      </td></tr>
+    </table>
+  </div>`
+}
+
 export async function sendBookingConfirmationToClient({
   clientName,
   clientEmail,
@@ -15,6 +75,7 @@ export async function sendBookingConfirmationToClient({
   transcriptOptedIn,
   transcriptFee,
   roomUrl,
+  consultantName,
 }: {
   clientName: string
   clientEmail: string
@@ -25,37 +86,33 @@ export async function sendBookingConfirmationToClient({
   transcriptOptedIn: boolean
   transcriptFee: number
   roomUrl: string
+  consultantName?: string
 }) {
   const priceText =
-    pricingModel === "flat"
-      ? `${formatCurrency(rate)} flat rate`
-      : `${formatCurrency(rate)}/min`
+    pricingModel === "flat" ? `${formatCurrency(rate)} flat rate` : `${formatCurrency(rate)}/min`
+  const consultant = consultantName || "your consultant"
+
+  const rowsHtml =
+    row("Consultant", consultant) +
+    row("Service", serviceType) +
+    (scheduledAt ? row("Date &amp; time", new Date(scheduledAt).toLocaleString()) : "") +
+    row("Rate", priceText) +
+    (transcriptOptedIn ? row("Transcript", `${formatCurrency(transcriptFee)} (opted in)`) : "")
 
   await resend.emails.send({
-    from: "ChatRate <noreply@chatrate-app.com>",
+    from: FROM,
     to: clientEmail,
-    subject: "Your ChatRate call is confirmed ✓",
-    html: `
-      <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; background: #0a0a0a; color: #fff; padding: 40px; border-radius: 12px;">
-        <h1 style="color: #a855f7; margin-bottom: 4px;">ChatRate</h1>
-        <p style="color: #888; margin-top: 0;">Expert consultations, on your schedule.</p>
-        <hr style="border-color: #222; margin: 24px 0;" />
-        <h2 style="margin-bottom: 8px;">Hi ${clientName}, your call is booked!</h2>
-        <p style="color: #ccc;">Here are your booking details:</p>
-        <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
-          <tr><td style="color: #888; padding: 8px 0;">Service</td><td style="font-weight: bold;">${serviceType}</td></tr>
-          <tr><td style="color: #888; padding: 8px 0;">Scheduled</td><td style="font-weight: bold;">${new Date(scheduledAt).toLocaleString()}</td></tr>
-          <tr><td style="color: #888; padding: 8px 0;">Rate</td><td style="font-weight: bold;">${priceText}</td></tr>
-          ${transcriptOptedIn ? `<tr><td style="color: #888; padding: 8px 0;">Transcript</td><td style="font-weight: bold;">${formatCurrency(transcriptFee)} (opted in)</td></tr>` : ""}
-        </table>
-        <a href="${roomUrl}" style="display: inline-block; background: #a855f7; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin: 8px 0;">
-          Join Call Room →
-        </a>
-        <p style="color: #666; font-size: 13px; margin-top: 24px;">
-          Your card has been saved and will only be charged after the call. No charge occurs until the session ends.
-        </p>
-      </div>
-    `,
+    subject: `Your call with ${consultant} is confirmed ✓`,
+    html: shell({
+      preheader: `Your ${serviceType} session with ${consultant} is booked.`,
+      eyebrow: "Booking confirmed",
+      heading: `You're booked, ${clientName}!`,
+      rowsHtml,
+      ctaLabel: "Join Call Room →",
+      ctaUrl: roomUrl,
+      footnote:
+        "Your card is securely saved and will only be charged after the call ends. No charge happens before your session.",
+    }),
   })
 }
 
@@ -81,42 +138,40 @@ export async function sendBookingNotificationToHost({
   hostEmail?: string
 }) {
   const priceText =
-    pricingModel === "flat"
-      ? `${formatCurrency(rate)} flat rate`
-      : `${formatCurrency(rate)}/min`
+    pricingModel === "flat" ? `${formatCurrency(rate)} flat rate` : `${formatCurrency(rate)}/min`
 
-  const timeChangeAlert = originalScheduledAt ? `
-    <tr>
-      <td colspan="2" style="padding: 10px 0;">
-        <div style="background: #7c2d12; border: 1px solid #ea580c; border-radius: 8px; padding: 12px 16px;">
-          <p style="color: #fdba74; font-weight: bold; margin: 0 0 6px;">⚠️ Client requested a different time</p>
-          <p style="color: #888; margin: 0; font-size: 13px;">Originally scheduled: ${new Date(originalScheduledAt).toLocaleString()}</p>
-        </div>
-      </td>
-    </tr>` : ""
+  const timeChangeAlert = originalScheduledAt
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;"><tr><td style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;">
+         <p style="margin:0 0 4px;color:#c2410c;font-weight:700;font-size:14px;">⚠️ Client requested a different time</p>
+         <p style="margin:0;color:#9a3412;font-size:13px;">Originally scheduled: ${new Date(originalScheduledAt).toLocaleString()}</p>
+       </td></tr></table>`
+    : ""
+
+  const rowsHtml =
+    row("Client", clientName) +
+    row("Email", clientEmail) +
+    row(
+      originalScheduledAt ? "Requested time" : "Scheduled",
+      new Date(scheduledAt).toLocaleString(),
+      originalScheduledAt ? { accent: "#ea580c" } : {}
+    ) +
+    row("Service", serviceType) +
+    row("Rate", priceText) +
+    row("Transcript", transcriptOptedIn ? "Yes (opted in)" : "No")
 
   await resend.emails.send({
-    from: "ChatRate <noreply@chatrate-app.com>",
+    from: FROM,
     to: hostEmail || HOST_EMAIL,
     subject: `${originalScheduledAt ? "⚠️ Time change — " : ""}New booking: ${clientName} — ${serviceType}`,
-    html: `
-      <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; background: #0a0a0a; color: #fff; padding: 40px; border-radius: 12px;">
-        <h1 style="color: #a855f7;">New ChatRate Booking</h1>
-        <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
-          ${timeChangeAlert}
-          <tr><td style="color: #888; padding: 8px 0;">Client</td><td style="font-weight: bold;">${clientName} (${clientEmail})</td></tr>
-          <tr><td style="color: #888; padding: 8px 0;">Service</td><td style="font-weight: bold;">${serviceType}</td></tr>
-          <tr><td style="color: #888; padding: 8px 0; color: ${originalScheduledAt ? "#fb923c" : "#888"};">
-            ${originalScheduledAt ? "Requested time" : "Scheduled"}
-          </td><td style="font-weight: bold; color: ${originalScheduledAt ? "#fb923c" : "#fff"};">${new Date(scheduledAt).toLocaleString()}</td></tr>
-          <tr><td style="color: #888; padding: 8px 0;">Rate</td><td style="font-weight: bold;">${priceText}</td></tr>
-          <tr><td style="color: #888; padding: 8px 0;">Transcript</td><td style="font-weight: bold;">${transcriptOptedIn ? "Yes (opted in)" : "No"}</td></tr>
-        </table>
-        <a href="${APP_URL}/dashboard" style="display: inline-block; background: #a855f7; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-          View Dashboard →
-        </a>
-      </div>
-    `,
+    html: shell({
+      preheader: `${clientName} booked ${serviceType}.`,
+      eyebrow: "New booking",
+      heading: `${clientName} just booked you`,
+      extraHtml: timeChangeAlert,
+      rowsHtml,
+      ctaLabel: "View Dashboard →",
+      ctaUrl: `${APP_URL}/dashboard`,
+    }),
   })
 }
 
@@ -127,6 +182,7 @@ export async function sendPostCallReceipt({
   durationSeconds,
   amountCharged,
   transcriptText,
+  consultantName,
 }: {
   clientName: string
   clientEmail: string
@@ -134,34 +190,41 @@ export async function sendPostCallReceipt({
   durationSeconds: number
   amountCharged: number
   transcriptText?: string | null
+  consultantName?: string
 }) {
   const minutes = Math.ceil(durationSeconds / 60)
+  const consultant = consultantName || "your consultant"
+  const dateStr = new Date().toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+
+  const rowsHtml =
+    row("Consultant", consultant) +
+    row("Service", serviceType) +
+    row("Date", dateStr) +
+    row("Duration", `${minutes} min`) +
+    row("Total charged", formatCurrency(amountCharged), { highlight: true })
+
+  const transcriptBlock = transcriptText
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;"><tr><td style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:20px;">
+         <p style="margin:0 0 10px;color:#7c3aed;font-weight:700;font-size:14px;">Call transcript</p>
+         <p style="margin:0;color:#374151;white-space:pre-wrap;font-size:14px;line-height:1.6;">${transcriptText}</p>
+       </td></tr></table>`
+    : ""
 
   await resend.emails.send({
-    from: "ChatRate <noreply@chatrate-app.com>",
+    from: FROM,
     to: clientEmail,
-    subject: "ChatRate call receipt",
-    html: `
-      <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; background: #0a0a0a; color: #fff; padding: 40px; border-radius: 12px;">
-        <h1 style="color: #a855f7;">ChatRate</h1>
-        <h2>Call Complete — Receipt</h2>
-        <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
-          <tr><td style="color: #888; padding: 8px 0;">Service</td><td style="font-weight: bold;">${serviceType}</td></tr>
-          <tr><td style="color: #888; padding: 8px 0;">Duration</td><td style="font-weight: bold;">${minutes} min</td></tr>
-          <tr><td style="color: #888; padding: 8px 0;">Charged</td><td style="font-weight: bold; color: #a855f7;">${formatCurrency(amountCharged)}</td></tr>
-        </table>
-        ${
-          transcriptText
-            ? `
-          <div style="background: #111; border: 1px solid #222; border-radius: 8px; padding: 20px; margin-top: 24px;">
-            <h3 style="margin-top: 0; color: #a855f7;">Call Transcript</h3>
-            <p style="color: #ccc; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${transcriptText}</p>
-          </div>
-        `
-            : ""
-        }
-        <p style="color: #666; font-size: 13px; margin-top: 24px;">Thank you for using ChatRate.</p>
-      </div>
-    `,
+    subject: `Receipt — your call with ${consultant}`,
+    html: shell({
+      preheader: `Receipt for your ${serviceType} session: ${formatCurrency(amountCharged)}.`,
+      eyebrow: "Payment receipt",
+      heading: `Thanks, ${clientName} — call complete`,
+      rowsHtml,
+      extraHtml: transcriptBlock,
+      footnote: `This charge appears on your statement under ${consultant}. Questions? Just reply to this email.`,
+    }),
   })
 }

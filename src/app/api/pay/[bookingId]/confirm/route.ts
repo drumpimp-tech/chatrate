@@ -34,7 +34,7 @@ export async function POST(
 
     const { data: host, error: hostErr } = await admin
       .from("hosts")
-      .select("id, username, stripe_secret_key, transcript_fee")
+      .select("id, username, display_name, stripe_secret_key, transcript_fee")
       .eq("id", booking.host_id)
       .single()
 
@@ -110,6 +110,7 @@ export async function POST(
           transcriptOptedIn: false,
           transcriptFee: 0,
           roomUrl,
+          consultantName: host.display_name,
         }),
         sendBookingNotificationToHost({
           clientName,
@@ -170,6 +171,7 @@ export async function POST(
         transcriptOptedIn,
         transcriptFee: host.transcript_fee,
         roomUrl: dailyRoomUrl,
+        consultantName: host.display_name,
       }),
       sendBookingNotificationToHost({
         clientName,

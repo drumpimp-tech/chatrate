@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { formatCurrency, formatDuration } from "@/lib/utils"
 import { format } from "date-fns"
@@ -46,6 +46,10 @@ export default function DashboardPage() {
   const router = useRouter()
   const supabase = createClient()
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [clearedIds, setClearedIds] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set()
+    try { return new Set(JSON.parse(localStorage.getItem("chatrate_cleared") || "[]")) } catch { return new Set() }
+  })
   const [host, setHost] = useState<Host | null>(null)
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming")
   const [loading, setLoading] = useState(true)
@@ -115,10 +119,19 @@ export default function DashboardPage() {
     setTimeout(() => setToast(""), 3500)
   }
 
+  const clearBooking = (id: string) => {
+    setClearedIds((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      try { localStorage.setItem("chatrate_cleared", JSON.stringify([...next])) } catch {}
+      return next
+    })
+  }
+
   const upcoming = bookings.filter((b) =>
-    ["confirmed", "pending", "in_progress", "invited"].includes(b.status)
+    ["confirmed", "pending", "in_progress", "invited"].includes(b.status) && !clearedIds.has(b.id)
   )
-  const past = bookings.filter((b) => b.status === "completed")
+  const past = bookings.filter((b) => b.status === "completed" && !clearedIds.has(b.id))
   const totalEarnings = past.reduce((sum, b) => sum + (b.amount_charged ?? 0), 0)
 
   const toggleAvailability = async () => {
@@ -416,7 +429,7 @@ export default function DashboardPage() {
             {upcoming.length === 0 ? (
               <Empty message="No upcoming bookings. Share your booking link to get started." />
             ) : (
-              upcoming.map((b) => <UpcomingCard key={b.id} booking={b} />)
+              upcoming.map((b) => <UpcomingCard key={b.id} booking={b} onClear={clearBooking} />)
             )}
           </div>
         )}
@@ -430,7 +443,7 @@ export default function DashboardPage() {
                 <PastCard
                   key={b.id}
                   booking={b}
-                  onClear={(id) => setBookings((prev) => prev.filter((x) => x.id !== id))}
+                  onClear={clearBooking}
                 />
               ))
             )}
@@ -464,10 +477,18 @@ function TabBtn({ children, active, onClick }: { children: React.ReactNode; acti
   )
 }
 
-function UpcomingCard({ booking }: { booking: Booking }) {
+function useLongPress(onLongPress: () => void, ms = 600) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const start = () => { timer.current = setTimeout(onLongPress, ms) }
+  const cancel = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null } }
+  return { onTouchStart: start, onTouchEnd: cancel, onTouchMove: cancel, onMouseDown: start, onMouseUp: cancel, onMouseLeave: cancel }
+}
+
+function UpcomingCard({ booking, onClear }: { booking: Booking; onClear: (id: string) => void }) {
   const isLive = booking.status === "in_progress"
   const isInvited = booking.status === "invited"
   const [copied, setCopied] = useState(false)
+  const [showClear, setShowClear] = useState(false)
 
   const inviteUrl = `${APP_URL}/pay/${booking.id}`
 
@@ -477,11 +498,25 @@ function UpcomingCard({ booking }: { booking: Booking }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const longPress = useLongPress(() => setShowClear(true))
+
   return (
-    <div className={`bg-white/[0.03] border rounded-2xl p-5 ${
-      isLive ? "border-red-500/30" : isInvited ? "border-amber-500/20" : "border-white/[0.06]"
-    }`}>
-      <div className="flex items-center justify-between gap-4">
+    <div
+      className={`bg-white/[0.03] border rounded-2xl p-5 relative select-none ${
+        isLive ? "border-red-500/30" : isInvited ? "border-amber-500/20" : "border-white/[0.06]"
+      }`}
+      {...longPress}
+    >
+      {/* Clear button */}
+      <button
+        onClick={() => onClear(booking.id)}
+        className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/10 hover:bg-red-500/30 text-gray-500 hover:text-red-400 flex items-center justify-center text-xs transition-all"
+        title="Clear"
+      >
+        ✕
+      </button>
+
+      <div className="flex items-center justify-between gap-4 pr-6">
         <div className="flex items-center gap-4">
           {isLive && (
             <span className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-full px-2 py-0.5 text-red-400 text-xs">
@@ -532,37 +567,45 @@ function UpcomingCard({ booking }: { booking: Booking }) {
           </div>
         </div>
       )}
+      {showClear && (
+        <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between">
+          <p className="text-xs text-gray-500">Remove this booking from your list?</p>
+          <div className="flex gap-2">
+            <button onClick={() => setShowClear(false)} className="text-xs text-gray-500 hover:text-white px-3 py-1.5 rounded-lg border border-white/10">Keep</button>
+            <button onClick={() => onClear(booking.id)} className="text-xs text-red-400 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-lg border border-red-500/30 transition-all">Remove</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 function PastCard({ booking, onClear }: { booking: Booking; onClear: (id: string) => void }) {
-  const [clearing, setClearing] = useState(false)
-
-  const handleClear = async () => {
-    setClearing(true)
-    try {
-      await fetch(`/api/bookings/${booking.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hidden: true }),
-      })
-      onClear(booking.id)
-    } catch {
-      setClearing(false)
-    }
-  }
+  const [showClear, setShowClear] = useState(false)
+  const longPress = useLongPress(() => setShowClear(true))
 
   return (
-    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 flex items-center justify-between gap-4">
-      <div>
-        <p className="font-semibold">{booking.client_name}</p>
-        <p className="text-gray-500 text-sm">{booking.service_type}</p>
-        {booking.duration_seconds && (
-          <p className="text-gray-600 text-xs mt-0.5">{formatDuration(booking.duration_seconds)}</p>
-        )}
-      </div>
-      <div className="flex items-center gap-4">
+    <div
+      className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 relative select-none"
+      {...longPress}
+    >
+      {/* Clear button */}
+      <button
+        onClick={() => onClear(booking.id)}
+        className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/10 hover:bg-red-500/30 text-gray-500 hover:text-red-400 flex items-center justify-center text-xs transition-all"
+        title="Clear"
+      >
+        ✕
+      </button>
+
+      <div className="flex items-center justify-between gap-4 pr-6">
+        <div>
+          <p className="font-semibold">{booking.client_name}</p>
+          <p className="text-gray-500 text-sm">{booking.service_type}</p>
+          {booking.duration_seconds && (
+            <p className="text-gray-600 text-xs mt-0.5">{formatDuration(booking.duration_seconds)}</p>
+          )}
+        </div>
         <div className="text-right">
           <p className="text-purple-400 font-bold text-lg">
             {booking.amount_charged ? formatCurrency(booking.amount_charged) : "—"}
@@ -572,14 +615,16 @@ function PastCard({ booking, onClear }: { booking: Booking; onClear: (id: string
             <p className="text-xs text-green-500 mt-0.5">Transcript sent ✓</p>
           )}
         </div>
-        <button
-          onClick={handleClear}
-          disabled={clearing}
-          className="text-gray-600 hover:text-red-400 transition-colors text-xs border border-white/10 hover:border-red-500/30 px-3 py-1.5 rounded-lg disabled:opacity-40"
-        >
-          {clearing ? "..." : "Clear"}
-        </button>
       </div>
+      {showClear && (
+        <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between">
+          <p className="text-xs text-gray-500">Remove this call from your history?</p>
+          <div className="flex gap-2">
+            <button onClick={() => setShowClear(false)} className="text-xs text-gray-500 hover:text-white px-3 py-1.5 rounded-lg border border-white/10">Keep</button>
+            <button onClick={() => onClear(booking.id)} className="text-xs text-red-400 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-lg border border-red-500/30 transition-all">Remove</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

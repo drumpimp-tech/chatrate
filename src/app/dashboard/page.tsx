@@ -80,7 +80,12 @@ export default function DashboardPage() {
       const res = await fetch("/api/bookings/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...inviteForm, maxSeats: parseInt(inviteForm.maxSeats) || 4 }),
+        body: JSON.stringify({
+          ...inviteForm,
+          // Convert datetime-local (local time) to UTC ISO string so Postgres stores it correctly
+          scheduledAt: inviteForm.scheduledAt ? new Date(inviteForm.scheduledAt).toISOString() : undefined,
+          maxSeats: parseInt(inviteForm.maxSeats) || 4,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)

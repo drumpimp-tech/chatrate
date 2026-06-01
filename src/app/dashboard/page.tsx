@@ -86,10 +86,22 @@ export default function DashboardPage() {
   }, [])
 
   const createInvite = async () => {
+    // Guard against the silent-null trap: if the host filled one of date/time
+    // but not the other, stop and tell them instead of saving "Client picks time".
+    if (inviteForm.date && !inviteForm.time) {
+      setToast("⏰ Pick a time too — or clear the date to let the client choose")
+      setTimeout(() => setToast(""), 4000)
+      return
+    }
+    if (inviteForm.time && !inviteForm.date) {
+      setToast("📅 Pick a date too — or clear the time to let the client choose")
+      setTimeout(() => setToast(""), 4000)
+      return
+    }
     setInviteCreating(true)
     try {
       // Combine date + time picked in the host's local zone into a UTC ISO string.
-      // Both are required together; if either is missing, the client picks the time.
+      // Both required together; if both are blank, the client picks the time.
       const scheduledAt = inviteForm.date && inviteForm.time
         ? new Date(`${inviteForm.date}T${inviteForm.time}`).toISOString()
         : null

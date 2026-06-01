@@ -10,6 +10,17 @@ import { Logo } from "@/components/Logo"
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://chatrate-app.com"
 
+// Time dropdown options in 15-min increments — value "HH:mm" (24h), label "h:mm AM/PM"
+const TIME_OPTIONS: { value: string; label: string }[] = Array.from({ length: 96 }, (_, i) => {
+  const h = Math.floor(i / 4)
+  const m = (i % 4) * 15
+  const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+  const period = h < 12 ? "AM" : "PM"
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  const label = `${h12}:${String(m).padStart(2, "0")} ${period}`
+  return { value, label }
+})
+
 type Booking = {
   id: string
   client_name: string | null
@@ -57,7 +68,7 @@ export default function DashboardPage() {
 
   // Create invite state
   const [showInvite, setShowInvite] = useState(false)
-  const [inviteForm, setInviteForm] = useState({ clientName: "", clientEmail: "", scheduledAt: "", notes: "", isGroup: false, maxSeats: "4" })
+  const [inviteForm, setInviteForm] = useState({ clientName: "", clientEmail: "", date: "", time: "", notes: "", isGroup: false, maxSeats: "4" })
   const [inviteCreating, setInviteCreating] = useState(false)
   const [inviteLink, setInviteLink] = useState("")
   const [inviteCopied, setInviteCopied] = useState(false)
@@ -77,10 +88,15 @@ export default function DashboardPage() {
   const createInvite = async () => {
     setInviteCreating(true)
     try {
+      // Combine date + time picked in the host's local zone into a UTC ISO string.
+      // Both are required together; if either is missing, the client picks the time.
+      const scheduledAt = inviteForm.date && inviteForm.time
+        ? new Date(`${inviteForm.date}T${inviteForm.time}`).toISOString()
+        : null
       const res = await fetch("/api/bookings/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...inviteForm, maxSeats: parseInt(inviteForm.maxSeats) || 4 }),
+        body: JSON.stringify({ ...inviteForm, scheduledAt, maxSeats: parseInt(inviteForm.maxSeats) || 4 }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -101,7 +117,7 @@ export default function DashboardPage() {
         transcript_opted_in: false,
         transcript_fee: 0,
         status: "invited",
-        scheduled_at: inviteForm.scheduledAt || null,
+        scheduled_at: scheduledAt,
         started_at: null,
         ended_at: null,
         duration_seconds: null,
@@ -115,7 +131,7 @@ export default function DashboardPage() {
       // Close panel and reset form
       setShowInvite(false)
       setInviteLink("")
-      setInviteForm({ clientName: "", clientEmail: "", scheduledAt: "", notes: "", isGroup: false, maxSeats: "4" })
+      setInviteForm({ clientName: "", clientEmail: "", date: "", time: "", notes: "", isGroup: false, maxSeats: "4" })
 
       // Scroll upcoming into view
       setTimeout(() => {
@@ -346,13 +362,24 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1.5">Date & time <span className="text-gray-600">(optional — client can pick if left blank)</span></label>
-                    <input
-                      type="datetime-local"
-                      value={inviteForm.scheduledAt}
-                      onChange={(e) => { if (e.target.value) setInviteForm((f) => ({ ...f, scheduledAt: e.target.value })) }}
-                      onBlur={(e) => { if (e.target.value) setInviteForm((f) => ({ ...f, scheduledAt: e.target.value })) }}
-                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500 [color-scheme:dark]"
-                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        value={inviteForm.date}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, date: e.target.value }))}
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+                      />
+                      <select
+                        value={inviteForm.time}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, time: e.target.value }))}
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+                      >
+                        <option value="">Select time…</option>
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1.5">Note to client <span className="text-gray-600">(optional)</span></label>
@@ -422,7 +449,7 @@ export default function DashboardPage() {
                   </div>
                   <p className="text-xs text-gray-500">Your client opens this link, adds their card, and confirms. You&apos;ll get an email when they do.</p>
                   <button
-                    onClick={() => { setInviteLink(""); setInviteForm({ clientName: "", clientEmail: "", scheduledAt: "", notes: "", isGroup: false, maxSeats: "5" }) }}
+                    onClick={() => { setInviteLink(""); setInviteForm({ clientName: "", clientEmail: "", date: "", time: "", notes: "", isGroup: false, maxSeats: "5" }) }}
                     className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
                   >
                     + Create another invite

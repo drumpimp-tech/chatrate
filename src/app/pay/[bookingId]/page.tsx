@@ -7,6 +7,17 @@ import { formatCurrency } from "@/lib/utils"
 import { loadStripe, type Stripe as StripeType, type StripeCardElement } from "@stripe/stripe-js"
 import { format } from "date-fns"
 
+// Time dropdown options in 15-min increments — value "HH:mm" (24h), label "h:mm AM/PM"
+const TIME_OPTIONS: { value: string; label: string }[] = Array.from({ length: 96 }, (_, i) => {
+  const h = Math.floor(i / 4)
+  const m = (i % 4) * 15
+  const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+  const period = h < 12 ? "AM" : "PM"
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  const label = `${h12}:${String(m).padStart(2, "0")} ${period}`
+  return { value, label }
+})
+
 type BookingInvite = {
   id: string
   client_name: string | null
@@ -41,7 +52,8 @@ export default function PayPage() {
   const [email, setEmail] = useState("")
   const [nameLockedByHost, setNameLockedByHost] = useState(false)
   const [emailLockedByHost, setEmailLockedByHost] = useState(false)
-  const [clientDate, setClientDate] = useState("")
+  const [clientDay, setClientDay] = useState("")
+  const [clientTime, setClientTime] = useState("")
   const [requestingNewTime, setRequestingNewTime] = useState(false)
   const [transcriptOptIn, setTranscriptOptIn] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
@@ -119,8 +131,12 @@ export default function PayPage() {
     if (!stripe || !cardElement || !setupClientSecret) return
     if (!name.trim()) { setError("Please enter your name"); return }
     if (!email.trim()) { setError("Please enter your email"); return }
-    // Require a date — either pre-set by host or chosen/changed by client
-    const finalDate = clientDate || booking?.scheduled_at
+    // Require a date — either pre-set by host or chosen/changed by client.
+    // Client's local pick is converted to a UTC ISO string so it stores correctly.
+    const clientPicked = clientDay && clientTime
+      ? new Date(`${clientDay}T${clientTime}`).toISOString()
+      : ""
+    const finalDate = clientPicked || booking?.scheduled_at
     if (!finalDate) { setError("Please select a date and time for the session"); return }
     if (!agreedToTerms) { setError("Please agree to the terms"); return }
 
@@ -262,7 +278,7 @@ export default function PayPage() {
                   <p className="text-purple-300 font-semibold text-sm">{format(new Date(booking.scheduled_at), "h:mm a")}</p>
                 </div>
                 <button
-                  onClick={() => { setRequestingNewTime(true); setClientDate("") }}
+                  onClick={() => { setRequestingNewTime(true); setClientDay(""); setClientTime("") }}
                   className="text-xs text-gray-500 hover:text-purple-400 underline transition-colors mt-1 flex-shrink-0"
                 >
                   Request different time
@@ -276,17 +292,29 @@ export default function PayPage() {
                   {booking.scheduled_at ? "Request a different date & time" : "Choose a date & time"} <span className="text-red-400">*</span>
                 </label>
                 {booking.scheduled_at && (
-                  <button onClick={() => { setRequestingNewTime(false); setClientDate("") }} className="text-xs text-gray-500 hover:text-white underline">
+                  <button onClick={() => { setRequestingNewTime(false); setClientDay(""); setClientTime("") }} className="text-xs text-gray-500 hover:text-white underline">
                     Keep original
                   </button>
                 )}
               </div>
-              <input
-                type="datetime-local"
-                value={clientDate}
-                onChange={(e) => setClientDate(e.target.value)}
-                className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-purple-500 [color-scheme:dark]"
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="date"
+                  value={clientDay}
+                  onChange={(e) => setClientDay(e.target.value)}
+                  className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+                />
+                <select
+                  value={clientTime}
+                  onChange={(e) => setClientTime(e.target.value)}
+                  className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+                >
+                  <option value="">Select time…</option>
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
               {booking.scheduled_at && (
                 <p className="text-xs text-amber-400">⚠ The consultant will be notified of your requested time change.</p>
               )}

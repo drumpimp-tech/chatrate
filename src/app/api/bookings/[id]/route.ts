@@ -52,17 +52,17 @@ export async function PATCH(
       const hostStripeKey = booking.hosts?.stripe_secret_key
       let totalCharged = 0
 
-      // Make the client's card statement show the consultant's name (not the
-      // raw Stripe account name). Stripe descriptor rules: 5-22 chars, no
-      // < > \ " ' * and at least one letter. Fall back to account default if
-      // the cleaned name is too short.
+      // Show the consultant's name on the client's card statement. Cards only
+      // accept statement_descriptor_SUFFIX (the complete statement_descriptor
+      // is rejected when the account already has a default descriptor, which
+      // previously threw and aborted the whole charge). Rules: no < > \ " ' *.
       const cleanedDescriptor = (booking.hosts?.display_name || "")
         .replace(/[<>\\"'*]/g, "")
         .replace(/\s+/g, " ")
         .trim()
         .slice(0, 22)
-      const descriptorOpts: { statement_descriptor?: string } =
-        cleanedDescriptor.length >= 5 ? { statement_descriptor: cleanedDescriptor } : {}
+      const descriptorOpts: { statement_descriptor_suffix?: string } =
+        cleanedDescriptor.length >= 5 ? { statement_descriptor_suffix: cleanedDescriptor } : {}
 
       // ── GROUP SESSION: charge each participant ──────────────────────
       if (booking.is_group) {
@@ -136,24 +136,32 @@ export async function PATCH(
           amountCharged += booking.transcript_fee
         }
 
+        let chargeSucceeded = false
         if (amountCharged > 0 && booking.stripe_customer_id && hostStripeKey) {
           const hostStripe = new Stripe(hostStripeKey, {
             apiVersion: "2026-04-22.dahlia" as const,
           })
-          await hostStripe.paymentIntents.create({
-            amount: Math.round(amountCharged * 100),
-            currency: "usd",
-            customer: booking.stripe_customer_id,
-            payment_method: booking.stripe_payment_method_id,
-            off_session: true,
-            confirm: true,
-            ...descriptorOpts,
-            description: `ChatRate: ${booking.service_type} — ${Math.ceil(durationSeconds / 60)} min`,
-            metadata: { bookingId: id },
-          })
+          try {
+            await hostStripe.paymentIntents.create({
+              amount: Math.round(amountCharged * 100),
+              currency: "usd",
+              customer: booking.stripe_customer_id,
+              payment_method: booking.stripe_payment_method_id,
+              off_session: true,
+              confirm: true,
+              ...descriptorOpts,
+              description: `ChatRate: ${booking.service_type} — ${Math.ceil(durationSeconds / 60)} min`,
+              metadata: { bookingId: id },
+            })
+            chargeSucceeded = true
+          } catch (chargeErr) {
+            // Never let a charge failure strand the booking or block the receipt.
+            console.error("1-on-1 charge failed:", chargeErr)
+          }
         }
 
-        totalCharged = amountCharged
+        // Only report a charge in the receipt/record if it actually went through.
+        totalCharged = chargeSucceeded ? amountCharged : 0
 
         // Fetch transcript if opted in
         let transcriptText: string | null = null

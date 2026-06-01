@@ -20,7 +20,7 @@ type Booking = {
   transcript_opted_in: boolean
   transcript_fee: number
   status: string
-  scheduled_at: string
+  scheduled_at: string | null
   started_at: string | null
   ended_at: string | null
   duration_seconds: number | null
@@ -534,9 +534,13 @@ function UpcomingCard({ booking, onClear }: { booking: Booking; onClear: (id: st
             <p className="text-gray-500 text-sm">{booking.service_type}</p>
           </div>
         </div>
-        <div className="text-right hidden sm:block">
-          <p className="text-sm font-medium">{format(new Date(booking.scheduled_at), "MMM d, h:mm a")}</p>
-          <p className="text-gray-500 text-xs">
+        <div className="text-right">
+          {booking.scheduled_at ? (
+            <p className="text-sm font-semibold text-white">{format(new Date(booking.scheduled_at), "MMM d, yyyy · h:mm a")}</p>
+          ) : (
+            <p className="text-xs text-amber-400 italic">Client picks time</p>
+          )}
+          <p className="text-gray-500 text-xs mt-0.5">
             {booking.pricing_model === "flat"
               ? formatCurrency(booking.rate) + " flat"
               : formatCurrency(booking.rate) + "/min"}
@@ -610,7 +614,7 @@ function PastCard({ booking, onClear }: { booking: Booking; onClear: (id: string
           <p className="text-purple-400 font-bold text-lg">
             {booking.amount_charged ? formatCurrency(booking.amount_charged) : "—"}
           </p>
-          <p className="text-gray-600 text-xs">{format(new Date(booking.scheduled_at), "MMM d, yyyy")}</p>
+          {booking.scheduled_at && <p className="text-gray-600 text-xs">{format(new Date(booking.scheduled_at), "MMM d, yyyy")}</p>}
           {booking.transcript_opted_in && (
             <p className="text-xs text-green-500 mt-0.5">Transcript sent ✓</p>
           )}

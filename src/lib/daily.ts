@@ -17,6 +17,7 @@ export async function createDailyRoom(bookingId: string, maxParticipants = 2): P
       properties: {
         enable_transcription: "deepgram",
         enable_chat: false,
+        enable_prejoin_ui: false,
         start_video_off: false,
         start_audio_off: false,
         // +1 to include the host alongside all paying participants

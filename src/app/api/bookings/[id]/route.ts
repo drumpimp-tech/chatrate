@@ -52,6 +52,18 @@ export async function PATCH(
       const hostStripeKey = booking.hosts?.stripe_secret_key
       let totalCharged = 0
 
+      // Make the client's card statement show the consultant's name (not the
+      // raw Stripe account name). Stripe descriptor rules: 5-22 chars, no
+      // < > \ " ' * and at least one letter. Fall back to account default if
+      // the cleaned name is too short.
+      const cleanedDescriptor = (booking.hosts?.display_name || "")
+        .replace(/[<>\\"'*]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 22)
+      const descriptorOpts: { statement_descriptor?: string } =
+        cleanedDescriptor.length >= 5 ? { statement_descriptor: cleanedDescriptor } : {}
+
       // ── GROUP SESSION: charge each participant ──────────────────────
       if (booking.is_group) {
         const { data: participants } = await admin
@@ -82,6 +94,7 @@ export async function PATCH(
                   payment_method: p.stripe_payment_method_id,
                   off_session: true,
                   confirm: true,
+                  ...descriptorOpts,
                   description: `ChatRate group: ${booking.service_type} — ${Math.ceil(durationSeconds / 60)} min`,
                   metadata: { bookingId: id, participantId: p.id },
                 })
@@ -134,6 +147,7 @@ export async function PATCH(
             payment_method: booking.stripe_payment_method_id,
             off_session: true,
             confirm: true,
+            ...descriptorOpts,
             description: `ChatRate: ${booking.service_type} — ${Math.ceil(durationSeconds / 60)} min`,
             metadata: { bookingId: id },
           })

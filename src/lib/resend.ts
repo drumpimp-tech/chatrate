@@ -251,3 +251,73 @@ export async function sendPostCallReceipt({
     ...(attachments.length ? { attachments } : {}),
   })
 }
+
+export async function sendHostPostCallReceipt({
+  hostEmail,
+  clientName,
+  serviceType,
+  durationSeconds,
+  amountCharged,
+  transcriptText,
+  consultantName,
+}: {
+  hostEmail: string
+  clientName: string
+  serviceType: string
+  durationSeconds: number
+  amountCharged: number
+  transcriptText?: string | null
+  consultantName?: string
+}) {
+  const minutes = Math.ceil(durationSeconds / 60)
+  const dateStr = new Date().toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+
+  const rowsHtml =
+    row("Client", clientName) +
+    row("Service", serviceType) +
+    row("Date", dateStr) +
+    row("Duration", `${minutes} min`) +
+    row("Earned", formatCurrency(amountCharged), { highlight: true })
+
+  const attachments: { filename: string; content: string }[] = []
+  let transcriptNote = ""
+  if (transcriptText && consultantName) {
+    try {
+      const pdfBase64 = await generateTranscriptPdf({
+        transcriptText,
+        consultantName,
+        clientName,
+        serviceType,
+        durationMinutes: minutes,
+        dateStr,
+      })
+      const safeName = clientName.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "")
+      attachments.push({ filename: `ChatRate-Transcript-${safeName}.pdf`, content: pdfBase64 })
+      transcriptNote = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;"><tr><td style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:16px 20px;">
+        <p style="margin:0;color:#7c3aed;font-weight:700;font-size:14px;">📄 Full call transcript attached as PDF.</p>
+      </td></tr></table>`
+    } catch (err) {
+      console.error("Host transcript PDF failed:", err)
+    }
+  }
+
+  await resend.emails.send({
+    from: FROM,
+    to: hostEmail,
+    subject: `Call complete — ${clientName} · ${formatCurrency(amountCharged)} earned`,
+    html: shell({
+      preheader: `${clientName} · ${serviceType} · ${minutes} min · ${formatCurrency(amountCharged)} earned.`,
+      eyebrow: "Call complete",
+      heading: `${clientName}'s session wrapped`,
+      rowsHtml,
+      extraHtml: transcriptNote,
+      ctaLabel: "View Dashboard →",
+      ctaUrl: `${APP_URL}/dashboard`,
+    }),
+    ...(attachments.length ? { attachments } : {}),
+  })
+}

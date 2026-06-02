@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server"
 import { getDailyRoomTranscript } from "@/lib/daily"
-import { sendPostCallReceipt } from "@/lib/resend"
+import { sendPostCallReceipt, sendHostPostCallReceipt } from "@/lib/resend"
 import Stripe from "stripe"
 
 export async function GET(
@@ -37,7 +37,7 @@ export async function PATCH(
     if (body.status === "completed" && body.ended_at) {
       const { data: booking } = await admin
         .from("bookings")
-        .select("*, hosts(stripe_secret_key, display_name)")
+        .select("*, hosts(user_id, stripe_secret_key, display_name)")
         .eq("id", id)
         .single()
 
@@ -175,15 +175,33 @@ export async function PATCH(
             (booking.daily_room_name ? await getDailyRoomTranscript(booking.daily_room_name) : null)
         }
 
-        await sendPostCallReceipt({
-          clientName: booking.client_name,
-          clientEmail: booking.client_email,
-          serviceType: booking.service_type,
-          durationSeconds,
-          amountCharged: totalCharged,
-          transcriptText,
-          consultantName: booking.hosts?.display_name,
-        }).catch(console.error)
+        // Get host auth email for their receipt
+        let hostEmail: string | undefined
+        if (booking.hosts?.user_id) {
+          const { data: { user: hostUser } } = await admin.auth.admin.getUserById(booking.hosts.user_id)
+          hostEmail = hostUser?.email
+        }
+
+        await Promise.allSettled([
+          sendPostCallReceipt({
+            clientName: booking.client_name,
+            clientEmail: booking.client_email,
+            serviceType: booking.service_type,
+            durationSeconds,
+            amountCharged: totalCharged,
+            transcriptText,
+            consultantName: booking.hosts?.display_name,
+          }),
+          hostEmail ? sendHostPostCallReceipt({
+            hostEmail,
+            clientName: booking.client_name,
+            serviceType: booking.service_type,
+            durationSeconds,
+            amountCharged: totalCharged,
+            transcriptText,
+            consultantName: booking.hosts?.display_name,
+          }) : Promise.resolve(),
+        ])
       }
 
       // Update booking record

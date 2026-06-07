@@ -23,6 +23,7 @@ export const SERVICE_TYPES = [
   "LLM Platform Consulting",
   "Music Review",
   "Virtual Music Lesson",
+  "Drum Lesson",
   "Business Consultation",
   "Music Critique & Feedback",
   "Career Coaching",

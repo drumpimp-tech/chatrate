@@ -24,7 +24,7 @@ export const SERVICE_TYPES = [
   "Music Review",
   "Virtual Music Lesson",
   "Drum Lesson",
-  "Music Lessons",
+  "Music Lesson",
   "Music Evaluation",
   "Music Catalog Evaluation",
   "Music Catalog Sales",

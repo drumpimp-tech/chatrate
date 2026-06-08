@@ -5,6 +5,10 @@ import Link from "next/link"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
 import { Logo } from "@/components/Logo"
 
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+type DayAvail = { enabled: boolean; start: string; end: string }
+
 type Host = {
   username: string
   display_name: string
@@ -31,6 +35,15 @@ export default function SettingsPage() {
   const [avatarError, setAvatarError] = useState("")
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
+  // Availability state
+  const [avail, setAvail] = useState<DayAvail[]>(
+    Array.from({ length: 7 }, () => ({ enabled: false, start: "09:00", end: "17:00" }))
+  )
+  const [blockedDates, setBlockedDates] = useState<string[]>([])
+  const [addingBlockDate, setAddingBlockDate] = useState("")
+  const [availSaving, setAvailSaving] = useState(false)
+  const [availSaved, setAvailSaved] = useState(false)
+
   useEffect(() => {
     fetch("/api/me")
       .then((r) => r.json())
@@ -41,7 +54,44 @@ export default function SettingsPage() {
         }
       })
       .catch(console.error)
+
+    fetch("/api/me/availability")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.availability) {
+          setAvail(
+            Array.from({ length: 7 }, (_, i) => {
+              const day = data.availability.find((a: { day_of_week: number }) => a.day_of_week === i)
+              return day
+                ? { enabled: true, start: day.start_time.slice(0, 5), end: day.end_time.slice(0, 5) }
+                : { enabled: false, start: "09:00", end: "17:00" }
+            })
+          )
+        }
+        if (data.blocked) {
+          setBlockedDates(data.blocked.map((b: { blocked_date: string }) => b.blocked_date))
+        }
+      })
+      .catch(console.error)
   }, [])
+
+  const saveAvailability = async () => {
+    setAvailSaving(true)
+    await fetch("/api/me/availability", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        availability: avail
+          .map((d, i) => ({ ...d, day_of_week: i }))
+          .filter((d) => d.enabled)
+          .map((d) => ({ day_of_week: d.day_of_week, start_time: d.start, end_time: d.end })),
+        blocked: blockedDates,
+      }),
+    })
+    setAvailSaving(false)
+    setAvailSaved(true)
+    setTimeout(() => setAvailSaved(false), 2000)
+  }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -302,6 +352,109 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
+          </Section>
+
+          {/* Availability */}
+          <Section title="Availability">
+            <p className="text-xs text-gray-500 -mt-1">
+              Set which days and hours clients can book. Leave all unchecked to allow any time.
+            </p>
+            <div className="space-y-2.5">
+              {DAYS.map((day, i) => (
+                <div key={day} className="flex items-center gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAvail((a) =>
+                        a.map((d, idx) => (idx === i ? { ...d, enabled: !d.enabled } : d))
+                      )
+                    }
+                    className={`w-12 text-xs font-bold py-1.5 rounded-lg border transition-all flex-shrink-0 ${
+                      avail[i].enabled
+                        ? "bg-purple-600/20 border-purple-500/50 text-purple-400"
+                        : "bg-white/[0.03] border-white/10 text-gray-500"
+                    }`}
+                  >
+                    {day}
+                  </button>
+                  {avail[i].enabled && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={avail[i].start}
+                        onChange={(e) =>
+                          setAvail((a) =>
+                            a.map((d, idx) => (idx === i ? { ...d, start: e.target.value } : d))
+                          )
+                        }
+                        className="bg-white/[0.04] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm [color-scheme:dark]"
+                      />
+                      <span className="text-gray-600 text-sm">–</span>
+                      <input
+                        type="time"
+                        value={avail[i].end}
+                        onChange={(e) =>
+                          setAvail((a) =>
+                            a.map((d, idx) => (idx === i ? { ...d, end: e.target.value } : d))
+                          )
+                        }
+                        className="bg-white/[0.04] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm [color-scheme:dark]"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-3 border-t border-white/[0.05] space-y-2">
+              <p className="text-sm text-gray-400">Block specific dates</p>
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={addingBlockDate}
+                  onChange={(e) => setAddingBlockDate(e.target.value)}
+                  className="bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white text-sm [color-scheme:dark]"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (addingBlockDate && !blockedDates.includes(addingBlockDate)) {
+                      setBlockedDates((d) => [...d, addingBlockDate].sort())
+                      setAddingBlockDate("")
+                    }
+                  }}
+                  className="bg-white/[0.06] hover:bg-white/[0.1] text-white text-sm font-medium px-4 py-2 rounded-xl transition-all"
+                >
+                  Block
+                </button>
+              </div>
+              {blockedDates.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {blockedDates.map((d) => (
+                    <span
+                      key={d}
+                      className="flex items-center gap-1.5 bg-red-900/20 border border-red-500/20 text-red-400 text-xs px-3 py-1.5 rounded-lg"
+                    >
+                      {d}
+                      <button
+                        onClick={() => setBlockedDates((prev) => prev.filter((x) => x !== d))}
+                        className="hover:text-red-200"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={saveAvailability}
+              disabled={availSaving}
+              className="w-full bg-purple-600/80 hover:bg-purple-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all"
+            >
+              {availSaving ? "Saving..." : availSaved ? "Saved ✓" : "Save Availability"}
+            </button>
           </Section>
 
           {/* Stripe info */}

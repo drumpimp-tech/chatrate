@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Logo } from "@/components/Logo"
 import { formatCurrency } from "@/lib/utils"
 import { loadStripe, type Stripe as StripeType, type StripeCardElement } from "@stripe/stripe-js"
-import { format } from "date-fns"
+import { format, addDays, parseISO } from "date-fns"
 
 // Time dropdown options in 15-min increments — value "HH:mm" (24h), label "h:mm AM/PM"
 const TIME_OPTIONS: { value: string; label: string }[] = Array.from({ length: 96 }, (_, i) => {
@@ -17,6 +17,32 @@ const TIME_OPTIONS: { value: string; label: string }[] = Array.from({ length: 96
   const label = `${h12}:${String(m).padStart(2, "0")} ${period}`
   return { value, label }
 })
+
+type HostAvailDay = { day_of_week: number; start_time: string; end_time: string }
+
+function fmt12(time24: string) {
+  const [hStr, mStr] = time24.split(":")
+  const h = parseInt(hStr)
+  const m = parseInt(mStr)
+  const period = h < 12 ? "AM" : "PM"
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`
+}
+
+function generateSlots(startTime: string, endTime: string): { value: string; label: string }[] {
+  const [sh, sm] = startTime.split(":").map(Number)
+  const [eh, em] = endTime.split(":").map(Number)
+  const startMins = sh * 60 + sm
+  const endMins = eh * 60 + em
+  const slots = []
+  for (let t = startMins; t < endMins; t += 30) {
+    const h = Math.floor(t / 60)
+    const m = t % 60
+    const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+    slots.push({ value, label: fmt12(value) })
+  }
+  return slots
+}
 
 type BookingInvite = {
   id: string
@@ -55,6 +81,8 @@ export default function PayPage() {
   const [clientDay, setClientDay] = useState("")
   const [clientTime, setClientTime] = useState("")
   const [requestingNewTime, setRequestingNewTime] = useState(false)
+  const [hostAvail, setHostAvail] = useState<HostAvailDay[]>([])
+  const [hostBlocked, setHostBlocked] = useState<string[]>([])
   const [transcriptOptIn, setTranscriptOptIn] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -76,6 +104,14 @@ export default function PayPage() {
         setLoading(false)
       })
       .catch(() => { setError("Failed to load invite"); setLoading(false) })
+
+    fetch(`/api/availability/${bookingId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setHostAvail(data.availability || [])
+        setHostBlocked((data.blocked || []).map((b: { blocked_date: string }) => b.blocked_date))
+      })
+      .catch(() => {})
   }, [bookingId])
 
   // Load Stripe + SetupIntent once booking is loaded
@@ -126,6 +162,33 @@ export default function PayPage() {
     init()
     return () => { mounted = false }
   }, [booking])
+
+  // Availability helpers
+  const hasAvailability = hostAvail.length > 0
+
+  // Build next 60 days as date strings, marking each available/blocked
+  const dateGrid = useMemo(() => {
+    if (!hasAvailability) return []
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return Array.from({ length: 60 }, (_, i) => {
+      const d = addDays(today, i)
+      const dateStr = format(d, "yyyy-MM-dd")
+      const dow = d.getDay() // 0=Sun
+      const availDay = hostAvail.find((a) => a.day_of_week === dow)
+      const isBlocked = hostBlocked.includes(dateStr)
+      return { dateStr, d, available: !!availDay && !isBlocked, availDay: availDay || null }
+    })
+  }, [hasAvailability, hostAvail, hostBlocked])
+
+  // Time slots for the selected day
+  const availableSlots = useMemo(() => {
+    if (!hasAvailability || !clientDay) return TIME_OPTIONS
+    const dow = parseISO(clientDay).getDay()
+    const availDay = hostAvail.find((a) => a.day_of_week === dow)
+    if (!availDay) return []
+    return generateSlots(availDay.start_time.slice(0, 5), availDay.end_time.slice(0, 5))
+  }, [hasAvailability, clientDay, hostAvail])
 
   const handlePay = async () => {
     if (!stripe || !cardElement || !setupClientSecret) return
@@ -297,24 +360,72 @@ export default function PayPage() {
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="date"
-                  value={clientDay}
-                  onChange={(e) => setClientDay(e.target.value)}
-                  className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
-                />
-                <select
-                  value={clientTime}
-                  onChange={(e) => setClientTime(e.target.value)}
-                  className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
-                >
-                  <option value="">Select time…</option>
-                  {TIME_OPTIONS.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
+
+              {hasAvailability ? (
+                /* ── Availability-aware picker ── */
+                <div className="space-y-3">
+                  {/* Date grid */}
+                  <div className="grid grid-cols-5 gap-1.5 max-h-64 overflow-y-auto pr-1">
+                    {dateGrid.map(({ dateStr, d, available }) => (
+                      <button
+                        key={dateStr}
+                        type="button"
+                        disabled={!available}
+                        onClick={() => { setClientDay(dateStr); setClientTime("") }}
+                        className={`flex flex-col items-center py-2 px-1 rounded-xl border text-xs font-medium transition-all ${
+                          clientDay === dateStr
+                            ? "bg-purple-600 border-purple-500 text-white"
+                            : available
+                            ? "bg-white/[0.04] border-white/10 text-white hover:border-purple-500/50 hover:bg-purple-900/20"
+                            : "bg-white/[0.01] border-white/[0.04] text-gray-700 cursor-not-allowed"
+                        }`}
+                      >
+                        <span className="text-[10px] uppercase tracking-wide">{format(d, "EEE")}</span>
+                        <span className="text-base font-bold leading-tight">{format(d, "d")}</span>
+                        <span className="text-[10px]">{format(d, "MMM")}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Time slots */}
+                  {clientDay && (
+                    <select
+                      value={clientTime}
+                      onChange={(e) => setClientTime(e.target.value)}
+                      className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+                    >
+                      <option value="">Select a time…</option>
+                      {availableSlots.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  )}
+                  {clientDay && availableSlots.length === 0 && (
+                    <p className="text-xs text-amber-400">No slots available for this day.</p>
+                  )}
+                </div>
+              ) : (
+                /* ── Free-form picker (no availability set) ── */
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    type="date"
+                    value={clientDay}
+                    onChange={(e) => setClientDay(e.target.value)}
+                    className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+                  />
+                  <select
+                    value={clientTime}
+                    onChange={(e) => setClientTime(e.target.value)}
+                    className="w-full bg-white/[0.04] border border-purple-500/30 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+                  >
+                    <option value="">Select time…</option>
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {booking.scheduled_at && (
                 <p className="text-xs text-amber-400">⚠ The consultant will be notified of your requested time change.</p>
               )}

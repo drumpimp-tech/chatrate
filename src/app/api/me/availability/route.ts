@@ -57,8 +57,8 @@ export async function PUT(req: NextRequest) {
 
     return Response.json({ ok: true })
   } catch (e: unknown) {
-    console.error("PUT /api/me/availability error:", e)
-    const msg = e instanceof Error ? e.message : "Save failed"
+    console.error("PUT /api/me/availability error:", JSON.stringify(e))
+    const msg = (e as { message?: string })?.message || (e instanceof Error ? e.message : JSON.stringify(e))
     return Response.json({ error: msg }, { status: 500 })
   }
 }

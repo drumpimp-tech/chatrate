@@ -72,6 +72,7 @@ export default function DashboardPage() {
   const [inviteCreating, setInviteCreating] = useState(false)
   const [inviteLink, setInviteLink] = useState("")
   const [inviteCopied, setInviteCopied] = useState(false)
+  const [bookLinkCopied, setBookLinkCopied] = useState(false)
   const [toast, setToast] = useState("")
 
   // Inline price editor state
@@ -315,10 +316,18 @@ export default function DashboardPage() {
               chatrate-app.com/book/{host.username}
             </a>
             <button
-              onClick={() => navigator.clipboard.writeText(bookingLink)}
-              className="text-xs text-gray-600 hover:text-gray-400 px-2 py-0.5 rounded border border-white/10 hover:border-white/20 transition-colors"
+              onClick={() => {
+                navigator.clipboard.writeText(bookingLink)
+                setBookLinkCopied(true)
+                setTimeout(() => setBookLinkCopied(false), 2000)
+              }}
+              className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                bookLinkCopied
+                  ? "text-green-400 border-green-500/40"
+                  : "text-gray-600 hover:text-gray-400 border-white/10 hover:border-white/20"
+              }`}
             >
-              Copy
+              {bookLinkCopied ? "✓ Copied!" : "Copy"}
             </button>
           </div>
         </div>

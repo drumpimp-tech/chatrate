@@ -1,10 +1,51 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { SERVICE_TYPES, formatCurrency } from "@/lib/utils"
 import { Logo } from "@/components/Logo"
 import { loadStripe, type Stripe as StripeType, type StripeCardElement } from "@stripe/stripe-js"
+import { addDays, format, parseISO } from "date-fns"
+
+type HostAvailDay = { day_of_week: number; start_time: string; end_time: string }
+
+function fmt12(time24: string) {
+  const [hStr, mStr] = time24.split(":")
+  const h = parseInt(hStr), m = parseInt(mStr)
+  const period = h < 12 ? "AM" : "PM"
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`
+}
+
+function generateSlots(startTime: string, endTime: string) {
+  const [sh, sm] = startTime.split(":").map(Number)
+  const [eh, em] = endTime.split(":").map(Number)
+  const slots = []
+  for (let t = sh * 60 + sm; t < eh * 60 + em; t += 30) {
+    const h = Math.floor(t / 60), m = t % 60
+    const value = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+    slots.push({ value, label: fmt12(value) })
+  }
+  return slots
+}
+
+function hostTimeToUTC(dateStr: string, timeStr: string, hostTZ: string): string {
+  const approx = new Date(`${dateStr}T${timeStr}:00`)
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: hostTZ, year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  }).formatToParts(approx)
+  const get = (type: string) => parseInt(parts.find((p) => p.type === type)!.value)
+  const tzMs = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"))
+  return new Date(approx.getTime() - (tzMs - approx.getTime())).toISOString()
+}
+
+function tzAbbr(tz: string) {
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" })
+      .formatToParts(new Date()).find((p) => p.type === "timeZoneName")?.value ?? tz
+  } catch { return tz }
+}
 
 type Host = {
   id: string
@@ -36,6 +77,14 @@ export default function BookPage() {
     cardName: "", agreedToTerms: false,
   })
 
+  // Availability
+  const [hostAvail, setHostAvail] = useState<HostAvailDay[]>([])
+  const [hostBlocked, setHostBlocked] = useState<string[]>([])
+  const [hostTZ, setHostTZ] = useState("America/New_York")
+  const [availLoaded, setAvailLoaded] = useState(false)
+  const [pickedDay, setPickedDay] = useState("")
+  const [pickedTime, setPickedTime] = useState("")
+
   // Stripe Elements state
   const [stripe, setStripe] = useState<StripeType | null>(null)
   const [cardElement, setCardElement] = useState<StripeCardElement | null>(null)
@@ -54,6 +103,16 @@ export default function BookPage() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
+
+    fetch(`/api/availability/username/${username}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setHostAvail(data.availability || [])
+        setHostBlocked((data.blocked || []).map((b: { blocked_date: string }) => b.blocked_date))
+        setHostTZ(data.timezone || "America/New_York")
+        setAvailLoaded(true)
+      })
+      .catch(() => setAvailLoaded(true))
   }, [username])
 
   // When entering Step 3: fetch SetupIntent + load Stripe Elements
@@ -106,6 +165,29 @@ export default function BookPage() {
     initStripe()
     return () => { mounted = false }
   }, [step, host, username])
+
+  const hasAvailability = hostAvail.length > 0
+
+  const dateGrid = useMemo(() => {
+    if (!hasAvailability) return []
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    return Array.from({ length: 60 }, (_, i) => {
+      const d = addDays(today, i)
+      const dateStr = format(d, "yyyy-MM-dd")
+      const dow = d.getDay()
+      const availDay = hostAvail.find((a) => a.day_of_week === dow)
+      const isBlocked = hostBlocked.includes(dateStr)
+      return { dateStr, d, available: !!availDay && !isBlocked, availDay: availDay || null }
+    })
+  }, [hasAvailability, hostAvail, hostBlocked])
+
+  const availableSlots = useMemo(() => {
+    if (!hasAvailability || !pickedDay) return []
+    const dow = parseISO(pickedDay).getDay()
+    const availDay = hostAvail.find((a) => a.day_of_week === dow)
+    if (!availDay) return []
+    return generateSlots(availDay.start_time.slice(0, 5), availDay.end_time.slice(0, 5))
+  }, [hasAvailability, pickedDay, hostAvail])
 
   const priceLabel = host
     ? host.rate_type === "flat"
@@ -277,13 +359,72 @@ export default function BookPage() {
         {step === 2 && (
           <div className="space-y-5 fade-up">
             <h2 className="text-xl font-bold">Pick a time</h2>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Preferred date & time</label>
-              <input type="datetime-local" value={form.scheduledAt}
-                min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
-                onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))}
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
-            </div>
+
+            {!availLoaded ? (
+              <div className="text-gray-500 text-sm animate-pulse py-8 text-center">Loading available slots…</div>
+            ) : hasAvailability ? (
+              <>
+                <p className="text-xs text-gray-500">🕐 All times shown in {tzAbbr(hostTZ)} ({hostTZ})</p>
+
+                {/* Date grid */}
+                <div>
+                  <label className="block text-sm text-gray-400 mb-3">Select a date</label>
+                  <div className="grid grid-cols-5 gap-2 max-h-72 overflow-y-auto pr-1">
+                    {dateGrid.filter((d) => d.available).slice(0, 30).map(({ dateStr, d }) => (
+                      <button
+                        key={dateStr}
+                        onClick={() => { setPickedDay(dateStr); setPickedTime(""); setForm((f) => ({ ...f, scheduledAt: "" })) }}
+                        className={`rounded-xl py-2.5 px-1 text-center transition-all border ${
+                          pickedDay === dateStr
+                            ? "bg-purple-600 border-purple-500 text-white"
+                            : "bg-white/[0.04] border-white/10 text-gray-300 hover:bg-white/10"
+                        }`}
+                      >
+                        <div className="text-xs text-gray-400 mb-0.5">{format(d, "EEE")}</div>
+                        <div className="text-sm font-semibold">{format(d, "MMM d")}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {dateGrid.filter((d) => d.available).length === 0 && (
+                    <p className="text-gray-500 text-sm text-center py-4">No available dates in the next 60 days.</p>
+                  )}
+                </div>
+
+                {/* Time slots */}
+                {pickedDay && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-3">Select a time</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {availableSlots.map(({ value, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => {
+                            setPickedTime(value)
+                            setForm((f) => ({ ...f, scheduledAt: hostTimeToUTC(pickedDay, value, hostTZ) }))
+                          }}
+                          className={`rounded-xl py-2.5 text-sm transition-all border ${
+                            pickedTime === value
+                              ? "bg-purple-600 border-purple-500 text-white font-semibold"
+                              : "bg-white/[0.04] border-white/10 text-gray-300 hover:bg-white/10"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Preferred date & time</label>
+                <input type="datetime-local" value={form.scheduledAt}
+                  min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
+                  onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+              </div>
+            )}
+
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-2">
               <SummaryRow label="Service" value={form.serviceType} />
               <SummaryRow label="Rate" value={priceLabel} highlight />

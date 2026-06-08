@@ -44,6 +44,33 @@ function generateSlots(startTime: string, endTime: string): { value: string; lab
   return slots
 }
 
+// Convert a date+time (in the host's timezone) to a UTC ISO string
+function hostTimeToUTC(dateStr: string, timeStr: string, hostTZ: string): string {
+  // Create a Date treating the local offset as a proxy, then correct by the
+  // difference between local and the host's timezone at that moment.
+  const approx = new Date(`${dateStr}T${timeStr}:00`)
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: hostTZ,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  }).formatToParts(approx)
+  const get = (type: string) => parseInt(parts.find((p) => p.type === type)!.value)
+  const tzMs = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"))
+  const offset = tzMs - approx.getTime()
+  return new Date(approx.getTime() - offset).toISOString()
+}
+
+function tzAbbr(tz: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" })
+      .formatToParts(new Date())
+      .find((p) => p.type === "timeZoneName")?.value ?? tz
+  } catch {
+    return tz
+  }
+}
+
 type BookingInvite = {
   id: string
   client_name: string | null
@@ -63,6 +90,7 @@ type BookingInvite = {
     avatar_url: string | null
     bio: string
     username: string
+    timezone: string
   }
 }
 
@@ -195,9 +223,12 @@ export default function PayPage() {
     if (!name.trim()) { setError("Please enter your name"); return }
     if (!email.trim()) { setError("Please enter your email"); return }
     // Require a date — either pre-set by host or chosen/changed by client.
-    // Client's local pick is converted to a UTC ISO string so it stores correctly.
+    // When host has availability set, times are in their timezone → convert properly.
+    // Otherwise fall back to treating the pick as local browser time.
     const clientPicked = clientDay && clientTime
-      ? new Date(`${clientDay}T${clientTime}`).toISOString()
+      ? (hasAvailability && booking?.host.timezone
+          ? hostTimeToUTC(clientDay, clientTime, booking.host.timezone)
+          : new Date(`${clientDay}T${clientTime}`).toISOString())
       : ""
     const finalDate = clientPicked || booking?.scheduled_at
     if (!finalDate) { setError("Please select a date and time for the session"); return }
@@ -364,6 +395,10 @@ export default function PayPage() {
               {hasAvailability ? (
                 /* ── Availability-aware picker ── */
                 <div className="space-y-3">
+                  {/* Timezone label */}
+                  <p className="text-xs text-purple-400 font-medium">
+                    🕐 All times are in {tzAbbr(booking.host.timezone || "America/New_York")} ({booking.host.timezone || "America/New_York"})
+                  </p>
                   {/* Date grid */}
                   <div className="grid grid-cols-5 gap-1.5 max-h-64 overflow-y-auto pr-1">
                     {dateGrid.map(({ dateStr, d, available }) => (

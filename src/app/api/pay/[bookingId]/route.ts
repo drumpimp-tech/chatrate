@@ -20,7 +20,7 @@ export async function GET(
 
     const { data: host } = await admin
       .from("hosts")
-      .select("display_name, avatar_url, bio, username")
+      .select("display_name, avatar_url, bio, username, timezone")
       .eq("id", booking.host_id)
       .single()
 

@@ -9,6 +9,28 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 type DayAvail = { enabled: boolean; start: string; end: string }
 
+const TIMEZONES = [
+  { value: "America/New_York",    label: "Eastern (ET)" },
+  { value: "America/Chicago",     label: "Central (CT)" },
+  { value: "America/Denver",      label: "Mountain (MT)" },
+  { value: "America/Phoenix",     label: "Arizona (no DST)" },
+  { value: "America/Los_Angeles", label: "Pacific (PT)" },
+  { value: "America/Anchorage",   label: "Alaska (AKT)" },
+  { value: "Pacific/Honolulu",    label: "Hawaii (HT)" },
+  { value: "America/Puerto_Rico", label: "Atlantic / Puerto Rico" },
+  { value: "Europe/London",       label: "London (GMT/BST)" },
+  { value: "Europe/Paris",        label: "Central Europe (CET)" },
+  { value: "Europe/Amsterdam",    label: "Amsterdam (CET)" },
+  { value: "Africa/Lagos",        label: "West Africa (WAT)" },
+  { value: "Africa/Johannesburg", label: "South Africa (SAST)" },
+  { value: "Asia/Dubai",          label: "Dubai (GST)" },
+  { value: "Asia/Kolkata",        label: "India (IST)" },
+  { value: "Asia/Tokyo",          label: "Japan (JST)" },
+  { value: "Asia/Seoul",          label: "Korea (KST)" },
+  { value: "Asia/Shanghai",       label: "China (CST)" },
+  { value: "Australia/Sydney",    label: "Sydney (AEST)" },
+]
+
 type Host = {
   username: string
   display_name: string
@@ -20,6 +42,7 @@ type Host = {
   is_available: boolean
   stripe_publishable_key: string | null
   avatar_url: string | null
+  timezone: string
 }
 
 export default function SettingsPage() {
@@ -134,6 +157,7 @@ export default function SettingsPage() {
         rate_type: form.rate_type,
         rate: form.rate,
         transcript_fee: form.transcript_fee,
+        timezone: form.timezone,
       }),
     })
     const updated = await res.json()
@@ -359,6 +383,19 @@ export default function SettingsPage() {
             <p className="text-xs text-gray-500 -mt-1">
               Set which days and hours clients can book. Leave all unchecked to allow any time.
             </p>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Your timezone</label>
+              <select
+                value={form.timezone || "America/New_York"}
+                onChange={(e) => setForm((f) => f && { ...f, timezone: e.target.value })}
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white appearance-none"
+              >
+                {TIMEZONES.map((tz) => (
+                  <option key={tz.value} value={tz.value} className="bg-[#111]">{tz.label} — {tz.value}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-600 mt-1.5">Times you set below are in this timezone. Clients see this timezone on the booking page.</p>
+            </div>
             <div className="space-y-2.5">
               {DAYS.map((day, i) => (
                 <div key={day} className="flex items-center gap-3 flex-wrap">

@@ -13,7 +13,7 @@ export async function GET() {
     const { data, error } = await admin
       .from("hosts")
       .select(
-        "id, username, display_name, bio, service_type, rate_type, rate, transcript_fee, is_available, is_activated, stripe_publishable_key, avatar_url"
+        "id, username, display_name, bio, service_type, rate_type, rate, transcript_fee, is_available, is_activated, stripe_publishable_key, avatar_url, timezone"
       )
       .eq("user_id", user.id)
       .single()
@@ -112,7 +112,7 @@ export async function PATCH(req: Request) {
       .update({ ...body, updated_at: new Date().toISOString() })
       .eq("user_id", user.id)
       .select(
-        "id, username, display_name, bio, service_type, rate_type, rate, transcript_fee, is_available, is_activated, stripe_publishable_key, avatar_url"
+        "id, username, display_name, bio, service_type, rate_type, rate, transcript_fee, is_available, is_activated, stripe_publishable_key, avatar_url, timezone"
       )
       .single()
 

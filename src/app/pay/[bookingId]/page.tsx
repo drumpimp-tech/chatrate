@@ -111,6 +111,7 @@ export default function PayPage() {
   const [requestingNewTime, setRequestingNewTime] = useState(false)
   const [hostAvail, setHostAvail] = useState<HostAvailDay[]>([])
   const [hostBlocked, setHostBlocked] = useState<string[]>([])
+  const [availLoaded, setAvailLoaded] = useState(false)
   const [transcriptOptIn, setTranscriptOptIn] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -138,8 +139,9 @@ export default function PayPage() {
       .then((data) => {
         setHostAvail(data.availability || [])
         setHostBlocked((data.blocked || []).map((b: { blocked_date: string }) => b.blocked_date))
+        setAvailLoaded(true)
       })
-      .catch(() => {})
+      .catch(() => setAvailLoaded(true)) // still unblock picker on error
   }, [bookingId])
 
   // Load Stripe + SetupIntent once booking is loaded
@@ -392,7 +394,9 @@ export default function PayPage() {
                 )}
               </div>
 
-              {hasAvailability ? (
+              {!availLoaded ? (
+                <div className="text-xs text-gray-500 animate-pulse py-3">Loading available slots…</div>
+              ) : hasAvailability ? (
                 /* ── Availability-aware picker ── */
                 <div className="space-y-3">
                   {/* Timezone label */}

@@ -98,22 +98,34 @@ export default function SettingsPage() {
       .catch(console.error)
   }, [])
 
+  const [availError, setAvailError] = useState("")
+
   const saveAvailability = async () => {
     setAvailSaving(true)
-    await fetch("/api/me/availability", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        availability: avail
-          .map((d, i) => ({ ...d, day_of_week: i }))
-          .filter((d) => d.enabled)
-          .map((d) => ({ day_of_week: d.day_of_week, start_time: d.start, end_time: d.end })),
-        blocked: blockedDates,
-      }),
-    })
-    setAvailSaving(false)
-    setAvailSaved(true)
-    setTimeout(() => setAvailSaved(false), 2000)
+    setAvailError("")
+    try {
+      const res = await fetch("/api/me/availability", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          availability: avail
+            .map((d, i) => ({ ...d, day_of_week: i }))
+            .filter((d) => d.enabled)
+            .map((d) => ({ day_of_week: d.day_of_week, start_time: d.start, end_time: d.end })),
+          blocked: blockedDates,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Save failed (${res.status})`)
+      }
+      setAvailSaved(true)
+      setTimeout(() => setAvailSaved(false), 2000)
+    } catch (e: unknown) {
+      setAvailError(e instanceof Error ? e.message : "Save failed")
+    } finally {
+      setAvailSaving(false)
+    }
   }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -492,6 +504,9 @@ export default function SettingsPage() {
             >
               {availSaving ? "Saving..." : availSaved ? "Saved ✓" : "Save Availability"}
             </button>
+            {availError && (
+              <p className="text-xs text-red-400 text-center">{availError}</p>
+            )}
           </Section>
 
           {/* Stripe info */}

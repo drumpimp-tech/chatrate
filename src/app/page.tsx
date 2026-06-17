@@ -4,7 +4,7 @@ import { Logo } from "@/components/Logo"
 const steps = [
   { n: "1", title: "Sign up free", desc: "Create your account in 60 seconds." },
   { n: "2", title: "Set your rates", desc: "Choose flat rate or per-minute. Set a transcript add-on if you want." },
-  { n: "3", title: "Paste your Stripe keys", desc: "Call payments go straight to your Stripe account — we never touch your money." },
+  { n: "3", title: "Connect your Stripe account", desc: "Enter your own Stripe API keys. Payments go straight to your Stripe — we never access your funds or take a cut." },
   { n: "4", title: "Pay once — own it forever", desc: "One-time $4.99 to activate. No subscriptions, no monthly fees." },
 ]
 
@@ -139,8 +139,12 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-8 text-center text-gray-600 text-sm">
-        © {new Date().getFullYear()} ChatRate · Built for experts who value their time.
+      <footer className="border-t border-white/5 py-8 text-center text-gray-600 text-sm space-y-2">
+        <div>© {new Date().getFullYear()} ChatRate · Built for experts who value their time.</div>
+        <div className="flex items-center justify-center gap-4">
+          <Link href="/privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-gray-400 transition-colors">Terms of Service</Link>
+        </div>
       </footer>
     </div>
   )

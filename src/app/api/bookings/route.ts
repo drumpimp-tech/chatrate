@@ -18,11 +18,13 @@ export async function GET() {
     const admin = await createAdminClient()
 
     // Find this user's host record
-    const { data: host } = await admin
+    const { data: host, error: hostErr } = await admin
       .from("hosts")
       .select("id")
       .eq("user_id", user.id)
       .single()
+
+    console.log("[bookings] user.id:", user.id, "host:", host, "hostErr:", hostErr)
 
     if (!host) return Response.json([])
 
@@ -31,6 +33,8 @@ export async function GET() {
       .select("*")
       .eq("host_id", host.id)
       .order("scheduled_at", { ascending: true })
+
+    console.log("[bookings] host.id:", host.id, "count:", data?.length, "error:", error)
 
     if (error) throw error
     return Response.json(data)

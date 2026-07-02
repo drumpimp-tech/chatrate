@@ -11,6 +11,7 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:@anthropic-ai/sdk@0.99",
         "npm:@daily-co/daily-js@0.90",
         "npm:@netlify/plugin-nextjs@^5.15.11",
         "npm:@radix-ui/react-dialog@^1.1.15",
@@ -34,6 +35,7 @@
         "npm:eslint@9",
         "npm:lucide-react@^1.16.0",
         "npm:next@16.2.6",
+        "npm:pdf-lib@^1.17.1",
         "npm:react-dom@19.2.4",
         "npm:react@19.2.4",
         "npm:resend@^6.12.4",

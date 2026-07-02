@@ -211,6 +211,12 @@ export default function DashboardPage() {
     })
   }
 
+  const rescheduleBooking = (id: string, newScheduledAt: string) => {
+    setBookings((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, scheduled_at: newScheduledAt } : b))
+    )
+  }
+
   const upcoming = bookings.filter((b) =>
     ["confirmed", "pending", "in_progress", "invited"].includes(b.status) && !clearedIds.has(b.id)
   )
@@ -574,13 +580,26 @@ export default function DashboardPage() {
         </div>
 
         {/* Bookings tabs */}
-        <div className="flex gap-1 mb-6">
-          <TabBtn active={activeTab === "upcoming"} onClick={() => setActiveTab("upcoming")}>
-            Upcoming ({upcoming.length})
-          </TabBtn>
-          <TabBtn active={activeTab === "past"} onClick={() => setActiveTab("past")}>
-            Past Calls ({past.length})
-          </TabBtn>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex gap-1">
+            <TabBtn active={activeTab === "upcoming"} onClick={() => setActiveTab("upcoming")}>
+              Upcoming ({upcoming.length})
+            </TabBtn>
+            <TabBtn active={activeTab === "past"} onClick={() => setActiveTab("past")}>
+              Past Calls ({past.length})
+            </TabBtn>
+          </div>
+          {clearedIds.size > 0 && (
+            <button
+              onClick={() => {
+                setClearedIds(new Set())
+                try { localStorage.removeItem("chatrate_cleared") } catch {}
+              }}
+              className="text-xs text-gray-500 hover:text-purple-400 transition-colors"
+            >
+              ↩ Restore hidden ({clearedIds.size})
+            </button>
+          )}
         </div>
 
         {activeTab === "upcoming" && (
@@ -588,7 +607,7 @@ export default function DashboardPage() {
             {upcoming.length === 0 ? (
               <Empty message="No upcoming bookings. Share your booking link to get started." />
             ) : (
-              upcoming.map((b) => <UpcomingCard key={b.id} booking={b} onClear={clearBooking} />)
+              upcoming.map((b) => <UpcomingCard key={b.id} booking={b} onClear={clearBooking} onReschedule={rescheduleBooking} />)
             )}
           </div>
         )}
@@ -643,11 +662,16 @@ function useLongPress(onLongPress: () => void, ms = 600) {
   return { onTouchStart: start, onTouchEnd: cancel, onTouchMove: cancel, onMouseDown: start, onMouseUp: cancel, onMouseLeave: cancel }
 }
 
-function UpcomingCard({ booking, onClear }: { booking: Booking; onClear: (id: string) => void }) {
+function UpcomingCard({ booking, onClear, onReschedule }: { booking: Booking; onClear: (id: string) => void; onReschedule: (id: string, newTime: string) => void }) {
   const isLive = booking.status === "in_progress"
   const isInvited = booking.status === "invited"
   const [copied, setCopied] = useState(false)
   const [showClear, setShowClear] = useState(false)
+  const [showReschedule, setShowReschedule] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState("")
+  const [rescheduleTime, setRescheduleTime] = useState("")
+  const [rescheduling, setRescheduling] = useState(false)
+  const [rescheduleToast, setRescheduleToast] = useState("")
 
   const inviteUrl = `${APP_URL}/pay/${booking.id}`
 
@@ -658,6 +682,33 @@ function UpcomingCard({ booking, onClear }: { booking: Booking; onClear: (id: st
   }
 
   const longPress = useLongPress(() => setShowClear(true))
+
+  const saveReschedule = async () => {
+    if (!rescheduleDate || !rescheduleTime) {
+      setRescheduleToast("Pick both a date and time")
+      setTimeout(() => setRescheduleToast(""), 3000)
+      return
+    }
+    setRescheduling(true)
+    try {
+      const newScheduledAt = new Date(`${rescheduleDate}T${rescheduleTime}`).toISOString()
+      const res = await fetch(`/api/bookings/${booking.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduled_at: newScheduledAt }),
+      })
+      if (!res.ok) throw new Error("Failed to reschedule")
+      onReschedule(booking.id, newScheduledAt)
+      setShowReschedule(false)
+      setRescheduleDate("")
+      setRescheduleTime("")
+    } catch {
+      setRescheduleToast("Failed to reschedule — try again")
+      setTimeout(() => setRescheduleToast(""), 3000)
+    } finally {
+      setRescheduling(false)
+    }
+  }
 
   return (
     <div
@@ -704,6 +755,14 @@ function UpcomingCard({ booking, onClear }: { booking: Booking; onClear: (id: st
               ? formatCurrency(booking.rate) + " flat"
               : formatCurrency(booking.rate) + "/min"}
           </p>
+          {booking.scheduled_at && !isInvited && !isLive && (
+            <button
+              onClick={() => setShowReschedule((v) => !v)}
+              className="text-xs text-purple-400 hover:text-purple-300 mt-1 transition-colors"
+            >
+              {showReschedule ? "Cancel" : "✏ Reschedule"}
+            </button>
+          )}
         </div>
         {isInvited ? (
           <button
@@ -723,6 +782,7 @@ function UpcomingCard({ booking, onClear }: { booking: Booking; onClear: (id: st
           </Link>
         )}
       </div>
+
       {isInvited && (
         <div className="mt-3 flex items-center gap-2">
           <div className="flex-1 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-1.5 font-mono text-purple-400 text-xs truncate">
@@ -730,6 +790,40 @@ function UpcomingCard({ booking, onClear }: { booking: Booking; onClear: (id: st
           </div>
         </div>
       )}
+
+      {/* Reschedule panel */}
+      {showReschedule && (
+        <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-3">
+          <p className="text-xs text-gray-400 font-semibold">Reschedule this call</p>
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="date"
+              value={rescheduleDate}
+              onChange={(e) => setRescheduleDate(e.target.value)}
+              className="bg-white/[0.04] border border-purple-500/30 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+            />
+            <select
+              value={rescheduleTime}
+              onChange={(e) => setRescheduleTime(e.target.value)}
+              className="bg-white/[0.04] border border-purple-500/30 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500 [color-scheme:dark]"
+            >
+              <option value="">Select time…</option>
+              {TIME_OPTIONS.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+          {rescheduleToast && <p className="text-xs text-red-400">{rescheduleToast}</p>}
+          <button
+            onClick={saveReschedule}
+            disabled={rescheduling}
+            className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-bold py-2.5 rounded-xl transition-all text-sm"
+          >
+            {rescheduling ? "Saving..." : "Save new time"}
+          </button>
+        </div>
+      )}
+
       {showClear && (
         <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between">
           <p className="text-xs text-gray-500">Remove this booking from your list?</p>

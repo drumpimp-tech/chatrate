@@ -22,7 +22,7 @@ export async function createDailyRoom(bookingId: string, maxParticipants = 2): P
         start_audio_off: false,
         // +1 to include the host alongside all paying participants
         max_participants: maxParticipants + 1,
-        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 24 hours
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 7 days
       },
     }),
   })

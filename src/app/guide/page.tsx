@@ -175,6 +175,8 @@ export default function GuidePage() {
               { id: "pricing", label: "2 · Set Your Rates" },
               { id: "daily", label: "3 · Video Calls" },
               { id: "go-live", label: "4 · Go Live" },
+              { id: "pricing-strategy", label: "Pricing Strategy" },
+              { id: "managing-bookings", label: "Managing Bookings" },
               { id: "faq", label: "FAQ" },
             ].map(({ id, label }) => (
               <a
@@ -504,6 +506,128 @@ export default function GuidePage() {
                 </div>
                 <div className="border-t border-white/[0.06] pt-3 text-xs text-gray-600">
                   After free video tier: $0.00045/participant-minute (~$0.054 per 60-min call)
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          {/* PRICING STRATEGY */}
+          <Section id="pricing-strategy">
+            <div className="space-y-2 mb-8">
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-8 bg-amber-600/20 border border-amber-500/30 rounded-lg flex items-center justify-center text-base">🧠</span>
+                <h2 className="text-2xl font-bold">How to Price Your Consulting Sessions</h2>
+              </div>
+              <p className="text-gray-400">
+                Setting the right rate is one of the most important decisions you&apos;ll make. Too low and clients undervalue your time. Too high and they bounce before booking. Here&apos;s how to find your number.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 space-y-3">
+                <h3 className="font-bold text-white">The anchor principle: what is your hourly worth?</h3>
+                <p className="text-gray-400 text-sm">Start with what you charge for a full hour of work. Set your per-minute rate as <strong className="text-white">hourly ÷ 60</strong>. If you bill $120/hr, that&apos;s $2/min — a rate clients understand because short calls stay affordable and long calls feel fair.</p>
+                <div className="bg-white/[0.03] rounded-xl p-4 grid grid-cols-3 gap-4 text-center text-sm">
+                  <div>
+                    <div className="text-white font-bold text-lg">$1/min</div>
+                    <div className="text-gray-500 text-xs">$60/hr equivalent</div>
+                    <div className="text-gray-600 text-xs mt-1">Early-career / niche skills</div>
+                  </div>
+                  <div>
+                    <div className="text-purple-400 font-bold text-lg">$2–3/min</div>
+                    <div className="text-gray-500 text-xs">$120–180/hr equivalent</div>
+                    <div className="text-gray-600 text-xs mt-1">Most experts start here</div>
+                  </div>
+                  <div>
+                    <div className="text-white font-bold text-lg">$5+/min</div>
+                    <div className="text-gray-500 text-xs">$300+/hr equivalent</div>
+                    <div className="text-gray-600 text-xs mt-1">C-suite / specialized domain</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 space-y-3">
+                <h3 className="font-bold text-white">Flat rate vs. per-minute: which is right for you?</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-purple-400 font-semibold mb-2">Choose flat rate if:</p>
+                    <ul className="space-y-1 text-gray-400">
+                      <li>• You run structured sessions (strategy, audits, reviews)</li>
+                      <li>• You want predictable income per session</li>
+                      <li>• Clients ask &ldquo;how much for 30 minutes?&rdquo;</li>
+                      <li>• You&apos;re newer and want simplicity</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-purple-400 font-semibold mb-2">Choose per-minute if:</p>
+                    <ul className="space-y-1 text-gray-400">
+                      <li>• You do open-ended advice or support calls</li>
+                      <li>• Call durations vary widely</li>
+                      <li>• Clients are familiar with metered billing</li>
+                      <li>• You want to maximize revenue on long calls</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 space-y-3">
+                <h3 className="font-bold text-white">Raise your rate before you think you&apos;re ready</h3>
+                <p className="text-gray-400 text-sm">If 80%+ of people who view your page are booking, you&apos;re priced too low. The right rate has some drop-off — it filters for clients who take your time seriously. If you haven&apos;t raised your rate in 6 months and you&apos;re fully booked, raise it by 25%.</p>
+              </div>
+            </div>
+          </Section>
+
+          {/* MANAGING BOOKINGS */}
+          <Section id="managing-bookings">
+            <div className="space-y-2 mb-8">
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-8 bg-blue-600/20 border border-blue-500/30 rounded-lg flex items-center justify-center text-base">📅</span>
+                <h2 className="text-2xl font-bold">Managing Client Bookings Online</h2>
+              </div>
+              <p className="text-gray-400">
+                Once you&apos;re live, your dashboard is your command center. Here&apos;s how to run a smooth client operation without juggling multiple tools.
+              </p>
+            </div>
+
+            <div className="space-y-0">
+              <Step n={1} title="Set your availability before sharing your link">
+                <p>Toggle availability to <strong>Open</strong> only when you&apos;re ready to accept new bookings. Toggle off when you&apos;re traveling or fully booked. Clients see a &ldquo;not accepting bookings&rdquo; message — no awkward emails needed.</p>
+              </Step>
+              <Step n={2} title="Confirm the booking details in your email notification">
+                <p>Every new booking triggers an email with the client&apos;s name, scheduled time, and call room link. Add the time to your calendar immediately.</p>
+              </Step>
+              <Step n={3} title="Join from the dashboard on call day">
+                <p>Go to your ChatRate dashboard and click <strong>Join Call</strong> from the upcoming booking card. The room is already created — no setup required on the day.</p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <LiveLink href="/dashboard" label="Go to Dashboard" />
+                </div>
+              </Step>
+              <Step n={4} title="Reschedule when needed">
+                <p>Use the reschedule button on any upcoming booking card to set a new time. The booking updates in place — no need to cancel and re-book.</p>
+              </Step>
+              <Step n={5} title="Toggle availability off between busy weeks">
+                <p>If you don&apos;t want surprise bookings during a project sprint, toggle off at the start of the week and back on when your calendar has room.</p>
+              </Step>
+            </div>
+
+            <div className="mt-6 bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5">
+              <h4 className="text-sm font-semibold text-gray-400 mb-3">Pro workflow tips</h4>
+              <div className="space-y-3 text-sm text-gray-400">
+                <div className="flex gap-3">
+                  <span className="text-purple-400 flex-shrink-0">→</span>
+                  <p><strong className="text-white">Put your booking link in your email signature.</strong> Every outbound email becomes a soft offer to book time with you.</p>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-purple-400 flex-shrink-0">→</span>
+                  <p><strong className="text-white">Mention your rate in your bio.</strong> Transparent pricing filters out tire-kickers. Clients who book are pre-qualified.</p>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-purple-400 flex-shrink-0">→</span>
+                  <p><strong className="text-white">Use flat-rate for first calls.</strong> New clients hesitate at open-ended billing. A fixed intro call removes friction. Switch to per-minute for returning clients who know your value.</p>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-purple-400 flex-shrink-0">→</span>
+                  <p><strong className="text-white">Enable transcripts.</strong> Clients who pay for a transcript are more engaged — they&apos;re investing in the outcome. It also cuts follow-up emails asking you to repeat advice.</p>
                 </div>
               </div>
             </div>

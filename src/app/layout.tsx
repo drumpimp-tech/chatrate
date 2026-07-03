@@ -8,7 +8,10 @@ export const metadata: Metadata = {
     template: "%s — ChatRate",
   },
   description:
-    "ChatRate gives you a personal booking page where clients pay to talk to you. Per-minute or flat rate. $4.99 one-time, no monthly fees, no platform cut. Direct to your Stripe.",
+    "Create your paid booking page in minutes. Set per-minute or flat rates, keep 100% via Stripe. $4.99 one-time — no monthly fees, no commission ever.",
+  alternates: {
+    canonical: "https://chatrate-app.com",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },

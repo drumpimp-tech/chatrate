@@ -1,0 +1,62 @@
+# ChatRate — Get Paid for Every Call. No Platform Cut.
+
+> ChatRate lets coaches, consultants, and experts create a personal booking page where clients pay to talk to them. Per-minute or flat rate billing. Stripe payments go directly to you. One-time $4.99 setup fee — no monthly fees, no commission, ever.
+
+ChatRate is a paid video consulting platform built for freelancers, coaches, and independent experts who want to monetize their time without giving up a cut to a middleman. Unlike Clarity.fm (which takes 15% of every call), ChatRate charges a one-time $4.99 fee and takes 0% commission on all calls. Clients book directly through your personal page, pay via Stripe, and join a live video call — all in one link.
+
+## What ChatRate Does
+
+- Creates a personal booking page for any expert or consultant
+- Accepts Stripe payments directly (host keeps 100%)
+- Hosts live video calls via built-in video (no Zoom needed)
+- Supports flat-rate or per-minute billing models
+- Offers optional call transcripts for clients
+- Supports group sessions with multiple paying participants
+- One-time $4.99 fee — no subscriptions, no monthly fees, no commission
+
+## Who It's For
+
+- Business coaches and executive consultants
+- Freelance writers, SEO consultants, and marketing experts
+- Fitness coaches and wellness professionals
+- Music producers, artists, and creative professionals
+- Career coaches, resume writers, and HR consultants
+- Real estate coaches and financial advisors
+- Anyone who charges for their time and expertise
+
+## How It Works
+
+1. Sign up at chatrate-app.com/signup
+2. Set your rate (flat per call or per minute)
+3. Connect your Stripe account
+4. Pay $4.99 once to activate your page
+5. Share your booking link — clients book, pay, and join your call
+
+## Key Pages
+
+- Homepage: https://chatrate-app.com
+- Sign up: https://chatrate-app.com/signup
+- How it works (guide): https://chatrate-app.com/guide
+- Clarity.fm alternative: https://chatrate-app.com/clarity-alternative
+- Example booking page: https://chatrate-app.com/book/trevorlawrencejr
+
+## Comparison: ChatRate vs Clarity.fm
+
+- Clarity.fm takes 15% of every call. ChatRate takes 0%.
+- Clarity.fm has no built-in video. ChatRate includes live video.
+- Clarity.fm charges monthly. ChatRate is $4.99 one-time.
+- ChatRate puts payments directly into your Stripe account.
+
+## Pricing
+
+- One-time activation fee: $4.99
+- Commission on calls: 0%
+- Monthly fee: $0
+- Stripe processing fees apply (standard Stripe rates)
+
+## Technology
+
+- Video calls powered by Daily.co
+- Payments powered by Stripe (direct to host's account)
+- Booking and scheduling built-in (no Calendly needed)
+- Optional AI-generated call transcripts via Deepgram

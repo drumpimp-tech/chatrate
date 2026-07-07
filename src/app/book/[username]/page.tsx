@@ -30,14 +30,19 @@ function generateSlots(startTime: string, endTime: string) {
 }
 
 function hostTimeToUTC(dateStr: string, timeStr: string, hostTZ: string): string {
-  const approx = new Date(`${dateStr}T${timeStr}:00`)
+  const [year, month, day] = dateStr.split("-").map(Number)
+  const [hour, minute] = timeStr.split(":").map(Number)
+  // Build a UTC timestamp using the same wall-clock numbers (timezone-agnostic)
+  const naiveUTC = Date.UTC(year, month - 1, day, hour, minute)
+  // Find what naiveUTC looks like in the host timezone
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: hostTZ, year: "numeric", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
-  }).formatToParts(approx)
+  }).formatToParts(new Date(naiveUTC))
   const get = (type: string) => parseInt(parts.find((p) => p.type === type)!.value)
-  const tzMs = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"))
-  return new Date(approx.getTime() - (tzMs - approx.getTime())).toISOString()
+  const displayedUTC = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"))
+  // Correct UTC = 2 * naiveUTC - displayedUTC (eliminates the TZ offset)
+  return new Date(2 * naiveUTC - displayedUTC).toISOString()
 }
 
 function tzAbbr(tz: string) {
@@ -418,10 +423,15 @@ export default function BookPage() {
             ) : (
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Preferred date & time</label>
-                <input type="datetime-local" value={form.scheduledAt}
+                <input type="datetime-local" value={form.scheduledAt ? new Date(form.scheduledAt).toLocaleString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(" ", "T") : ""}
                   min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
-                  onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                  onChange={(e) => {
+                    // Convert browser local time to UTC ISO string immediately
+                    const utcIso = new Date(e.target.value).toISOString()
+                    setForm((f) => ({ ...f, scheduledAt: utcIso }))
+                  }}
                   className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+                <p className="text-xs text-gray-500 mt-1">Times are in your local timezone</p>
               </div>
             )}
 

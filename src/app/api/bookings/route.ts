@@ -137,6 +137,8 @@ export async function POST(request: Request) {
         transcriptOptedIn,
         transcriptFee: host.transcript_fee,
         roomUrl: dailyRoomUrl,
+        consultantName: host.display_name,
+        hostTimezone: host.timezone || "America/New_York",
       }),
       sendBookingNotificationToHost({
         clientName,
@@ -146,6 +148,7 @@ export async function POST(request: Request) {
         pricingModel: host.rate_type,
         rate: host.rate,
         transcriptOptedIn,
+        hostTimezone: host.timezone || "America/New_York",
       }),
     ])
 

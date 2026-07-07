@@ -66,6 +66,18 @@ function shell(opts: {
   </div>`
 }
 
+function fmtTime(isoStr: string, tz = "America/New_York") {
+  try {
+    return new Date(isoStr).toLocaleString("en-US", {
+      timeZone: tz,
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+      hour: "numeric", minute: "2-digit", timeZoneName: "short",
+    })
+  } catch {
+    return new Date(isoStr).toLocaleString()
+  }
+}
+
 export async function sendBookingConfirmationToClient({
   clientName,
   clientEmail,
@@ -77,6 +89,7 @@ export async function sendBookingConfirmationToClient({
   transcriptFee,
   roomUrl,
   consultantName,
+  hostTimezone,
 }: {
   clientName: string
   clientEmail: string
@@ -88,6 +101,7 @@ export async function sendBookingConfirmationToClient({
   transcriptFee: number
   roomUrl: string
   consultantName?: string
+  hostTimezone?: string
 }) {
   const priceText =
     pricingModel === "flat" ? `${formatCurrency(rate)} flat rate` : `${formatCurrency(rate)}/min`
@@ -96,7 +110,7 @@ export async function sendBookingConfirmationToClient({
   const rowsHtml =
     row("Consultant", consultant) +
     row("Service", serviceType) +
-    (scheduledAt ? row("Date &amp; time", new Date(scheduledAt).toLocaleString()) : "") +
+    (scheduledAt ? row("Date &amp; time", fmtTime(scheduledAt, hostTimezone)) : "") +
     row("Rate", priceText) +
     (transcriptOptedIn ? row("Transcript", `${formatCurrency(transcriptFee)} (opted in)`) : "")
 
@@ -127,6 +141,7 @@ export async function sendBookingNotificationToHost({
   rate,
   transcriptOptedIn,
   hostEmail,
+  hostTimezone,
 }: {
   clientName: string
   clientEmail: string
@@ -137,6 +152,7 @@ export async function sendBookingNotificationToHost({
   rate: number
   transcriptOptedIn: boolean
   hostEmail?: string
+  hostTimezone?: string
 }) {
   const priceText =
     pricingModel === "flat" ? `${formatCurrency(rate)} flat rate` : `${formatCurrency(rate)}/min`
@@ -144,7 +160,7 @@ export async function sendBookingNotificationToHost({
   const timeChangeAlert = originalScheduledAt
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;"><tr><td style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;">
          <p style="margin:0 0 4px;color:#c2410c;font-weight:700;font-size:14px;">⚠️ Client requested a different time</p>
-         <p style="margin:0;color:#9a3412;font-size:13px;">Originally scheduled: ${new Date(originalScheduledAt).toLocaleString()}</p>
+         <p style="margin:0;color:#9a3412;font-size:13px;">Originally scheduled: ${fmtTime(originalScheduledAt, hostTimezone)}</p>
        </td></tr></table>`
     : ""
 
@@ -153,7 +169,7 @@ export async function sendBookingNotificationToHost({
     row("Email", clientEmail) +
     row(
       originalScheduledAt ? "Requested time" : "Scheduled",
-      new Date(scheduledAt).toLocaleString(),
+      fmtTime(scheduledAt, hostTimezone),
       originalScheduledAt ? { accent: "#ea580c" } : {}
     ) +
     row("Service", serviceType) +
